@@ -244,3 +244,14 @@ The node-based architecture supports:
 - **Persistence**: Save/load pipeline configurations
 - **Drag-and-drop**: Rearrange nodes (would require additional library)
 
+
+## Additional modules
+
+* Trigger webhook: based on inference output or user configuration, make a web request
+* Display a color: a simple color display set by the LLM
+* Display an icon: a menu of icons the LLM can pick and display one of
+* Gauge (numeric): a large number set by the LLM
+* Surveys: an interactive sequence of questions guided by the LLM
+* Paint input: the user paints things and the LLM interprets it
+* Pixel art generator: the LLM can generate pixel art
+
