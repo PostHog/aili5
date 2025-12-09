@@ -13,6 +13,7 @@ import type {
   PipelineNodeConfig,
   NodeConfigByType,
   ColorOutput,
+  URLContextItem,
 } from "@/types/pipeline";
 import { MODULE_DEFINITIONS } from "./ModulePalette";
 import { NodeRenderer } from "./nodes/NodeRenderer";
@@ -25,8 +26,11 @@ interface PipelineCanvasProps {
   userInputs: Record<string, string>;
   onUserInputChange: (nodeId: string, value: string) => void;
   onRunInference: (nodeId: string) => void;
+  onLoadURL: (nodeId: string, url: string, label?: string) => void;
   loadingNodeId: string | null;
+  loadingUrlNodeIds: Set<string>;
   outputs: Record<string, unknown>;
+  urlContexts: Record<string, URLContextItem>;
   activeNodeId: string | null;
 }
 
@@ -37,8 +41,11 @@ interface SortableNodeProps {
   userInputValue: string;
   onUserInputChange: (nodeId: string, value: string) => void;
   onRunInference: (nodeId: string) => void;
+  onLoadURL: (nodeId: string, url: string, label?: string) => void;
   isLoading: boolean;
+  isLoadingUrl: boolean;
   output: unknown;
+  urlContext: URLContextItem | null;
   isLast: boolean;
 }
 
@@ -49,8 +56,11 @@ function SortableNode({
   userInputValue,
   onUserInputChange,
   onRunInference,
+  onLoadURL,
   isLoading,
+  isLoadingUrl,
   output,
+  urlContext,
   isLast,
 }: SortableNodeProps) {
   const {
@@ -123,8 +133,10 @@ function SortableNode({
             userInputValue={userInputValue}
             onUserInputChange={onUserInputChange}
             onRunInference={onRunInference}
-            isLoading={isLoading}
+            onLoadURL={onLoadURL}
+            isLoading={isLoading || isLoadingUrl}
             output={output}
+            urlContext={urlContext}
           />
         </div>
       </div>
@@ -154,8 +166,11 @@ export function PipelineCanvas({
   userInputs,
   onUserInputChange,
   onRunInference,
+  onLoadURL,
   loadingNodeId,
+  loadingUrlNodeIds,
   outputs,
+  urlContexts,
   activeNodeId,
 }: PipelineCanvasProps) {
   const { setNodeRef, isOver } = useDroppable({
@@ -195,8 +210,11 @@ export function PipelineCanvas({
                 userInputValue={userInputs[node.id] || ""}
                 onUserInputChange={onUserInputChange}
                 onRunInference={onRunInference}
+                onLoadURL={onLoadURL}
                 isLoading={loadingNodeId === node.id}
+                isLoadingUrl={loadingUrlNodeIds.has(node.id)}
                 output={outputs[node.id] || null}
+                urlContext={urlContexts[node.id] || null}
                 isLast={index === nodes.length - 1}
               />
             ))}

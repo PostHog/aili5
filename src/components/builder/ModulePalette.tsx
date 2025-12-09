@@ -11,6 +11,7 @@ import {
   Grid3X3,
   Webhook,
   ClipboardList,
+  Link,
   type LucideIcon,
 } from "lucide-react";
 import type { NodeType } from "@/types/pipeline";
@@ -28,6 +29,7 @@ interface ModuleDefinition {
 // Bright primary color palette
 const COLORS = {
   blue: "#3B82F6",      // System prompt - trustworthy blue
+  teal: "#14B8A6",      // URL loader - web teal
   yellow: "#FBBF24",    // LLM inference - cheerful yellow
   grey: "#6B7280",      // Color output - neutral grey
   purple: "#8B5CF6",    // Icon output - vibrant purple
@@ -45,6 +47,14 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     icon: MessageSquare,
     category: "input",
     color: COLORS.blue,
+  },
+  {
+    type: "url_loader",
+    name: "URL Loader",
+    description: "Load web content",
+    icon: Link,
+    category: "input",
+    color: COLORS.teal,
   },
   {
     type: "inference",

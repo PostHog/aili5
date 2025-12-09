@@ -7,6 +7,8 @@ import type {
   InferenceConfig,
   IconDisplayConfig,
   ColorDisplayConfig,
+  URLLoaderConfig,
+  URLContextItem,
   TextOutput,
   IconOutput,
   ColorOutput,
@@ -15,6 +17,7 @@ import { SystemPromptNodeEditor } from "./SystemPromptNodeEditor";
 import { InferenceNodeEditor } from "./InferenceNodeEditor";
 import { IconDisplayNodeEditor } from "./IconDisplayNodeEditor";
 import { ColorDisplayNodeEditor } from "./ColorDisplayNodeEditor";
+import { URLLoaderNodeEditor } from "./URLLoaderNodeEditor";
 
 interface NodeRendererProps {
   node: PipelineNodeConfig;
@@ -22,8 +25,10 @@ interface NodeRendererProps {
   userInputValue?: string;
   onUserInputChange?: (nodeId: string, value: string) => void;
   onRunInference?: (nodeId: string) => void;
+  onLoadURL?: (nodeId: string, url: string, label?: string) => void;
   isLoading?: boolean;
   output?: unknown;
+  urlContext?: URLContextItem | null;
 }
 
 export function NodeRenderer({
@@ -32,8 +37,10 @@ export function NodeRenderer({
   userInputValue = "",
   onUserInputChange,
   onRunInference,
+  onLoadURL,
   isLoading = false,
   output = null,
+  urlContext = null,
 }: NodeRendererProps) {
   switch (node.type) {
     case "system_prompt":
@@ -73,6 +80,18 @@ export function NodeRenderer({
           config={node.config as ColorDisplayConfig}
           onChange={(config) => onConfigChange(node.id, config)}
           output={output as ColorOutput | null}
+          loading={isLoading}
+        />
+      );
+
+    case "url_loader":
+      return (
+        <URLLoaderNodeEditor
+          config={node.config as URLLoaderConfig}
+          onChange={(config) => onConfigChange(node.id, config)}
+          urlContext={urlContext}
+          onLoadURL={onLoadURL || (() => {})}
+          nodeId={node.id}
           loading={isLoading}
         />
       );

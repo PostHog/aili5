@@ -23,6 +23,8 @@ import type {
   GaugeOutput,
   InferenceConfig,
   SystemPromptConfig,
+  URLLoaderConfig,
+  URLContextItem,
 } from "@/types/pipeline";
 import { getToolsForDownstreamNodes } from "@/lib/tools";
 import { generateBlockMetadata } from "@/lib/blockParsers";
@@ -46,6 +48,8 @@ function getDefaultConfig(type: NodeType): NodeConfigByType[NodeType] {
       return { prompt: "You are a helpful assistant." };
     case "user_input":
       return { placeholder: "Enter your message..." };
+    case "url_loader":
+      return { url: "" };
     case "inference":
       return { model: "claude-sonnet-4-20250514", temperature: 0.7 };
     case "text_display":
@@ -83,8 +87,14 @@ export function PipelineBuilder() {
   // State for outputs (keyed by node id)
   const [outputs, setOutputs] = useState<Record<string, OutputData>>({});
 
+  // State for URL context (keyed by node id)
+  const [urlContexts, setUrlContexts] = useState<Record<string, URLContextItem>>({});
+
   // Loading state for inference
   const [loadingNodeId, setLoadingNodeId] = useState<string | null>(null);
+
+  // Loading state for URL loaders (keyed by node id)
+  const [loadingUrlNodeIds, setLoadingUrlNodeIds] = useState<Set<string>>(new Set());
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -168,6 +178,11 @@ export function PipelineBuilder() {
       delete next[id];
       return next;
     });
+    setUrlContexts((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
   }, []);
 
   const handleConfigChange = useCallback(
@@ -182,6 +197,63 @@ export function PipelineBuilder() {
   const handleUserInputChange = useCallback((nodeId: string, value: string) => {
     setUserInputs((prev) => ({ ...prev, [nodeId]: value }));
   }, []);
+
+  const handleLoadURL = useCallback(
+    async (nodeId: string, url: string, label?: string) => {
+      if (!url) return;
+
+      setLoadingUrlNodeIds((prev) => new Set(prev).add(nodeId));
+
+      try {
+        const response = await fetch("/api/fetch-url", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url }),
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+          setUrlContexts((prev) => ({
+            ...prev,
+            [nodeId]: {
+              url,
+              label,
+              content: "",
+              error: data.error,
+            },
+          }));
+        } else {
+          setUrlContexts((prev) => ({
+            ...prev,
+            [nodeId]: {
+              url: data.url,
+              label,
+              content: data.content,
+            },
+          }));
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unknown error";
+        setUrlContexts((prev) => ({
+          ...prev,
+          [nodeId]: {
+            url,
+            label,
+            content: "",
+            error: message,
+          },
+        }));
+      } finally {
+        setLoadingUrlNodeIds((prev) => {
+          const next = new Set(prev);
+          next.delete(nodeId);
+          return next;
+        });
+      }
+    },
+    []
+  );
 
   const handleRunInference = useCallback(
     async (inferenceNodeId: string) => {
@@ -218,6 +290,38 @@ export function PipelineBuilder() {
           systemPrompt += metadata;
         }
       }
+
+      // Gather URL context from preceding URL loader nodes
+      const urlContextItems: URLContextItem[] = [];
+      for (const node of precedingNodes) {
+        if (node.type === "url_loader") {
+          const ctx = urlContexts[node.id];
+          if (ctx && ctx.content && !ctx.error) {
+            urlContextItems.push(ctx);
+          }
+        }
+      }
+
+      // Append URL context to system prompt
+      if (urlContextItems.length > 0) {
+        systemPrompt += "\n\n## Reference Content\n";
+        systemPrompt += "The following content has been loaded for context:\n\n";
+        for (const item of urlContextItems) {
+          const label = item.label || item.url;
+          systemPrompt += `### ${label}\n`;
+          systemPrompt += `Source: ${item.url}\n\n`;
+          systemPrompt += item.content;
+          systemPrompt += "\n\n---\n\n";
+        }
+      }
+
+      // Debug logging
+      console.log("=== Inference Debug ===");
+      console.log("System prompt length:", systemPrompt.length);
+      console.log("URL contexts state:", urlContexts);
+      console.log("URL context items found:", urlContextItems.length);
+      console.log("Preceding nodes:", precedingNodes.map(n => ({ id: n.id, type: n.type })));
+      console.log("Full system prompt:", systemPrompt);
 
       setLoadingNodeId(inferenceNodeId);
 
@@ -271,7 +375,7 @@ export function PipelineBuilder() {
         setLoadingNodeId(null);
       }
     },
-    [nodes, userInputs]
+    [nodes, userInputs, urlContexts]
   );
 
   // Find module info for drag overlay
@@ -294,8 +398,11 @@ export function PipelineBuilder() {
           userInputs={userInputs}
           onUserInputChange={handleUserInputChange}
           onRunInference={handleRunInference}
+          onLoadURL={handleLoadURL}
           loadingNodeId={loadingNodeId}
+          loadingUrlNodeIds={loadingUrlNodeIds}
           outputs={outputs}
+          urlContexts={urlContexts}
           activeNodeId={activeId}
         />
         <ModulePalette />

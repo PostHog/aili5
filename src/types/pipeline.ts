@@ -17,6 +17,7 @@ export interface PipelineNodeConfig {
 export type NodeType =
   | "system_prompt"
   | "user_input"
+  | "url_loader"
   | "inference"
   | "text_display"
   | "color_display"
@@ -37,6 +38,13 @@ export interface SystemPromptConfig {
 export interface UserInputConfig {
   placeholder?: string;
   defaultValue?: string;
+}
+
+export interface URLLoaderConfig {
+  /** The URL to fetch content from */
+  url: string;
+  /** Label for this context source */
+  label?: string;
 }
 
 export interface InferenceConfig {
@@ -101,6 +109,7 @@ export interface SurveyConfig {
 export interface NodeConfigByType {
   system_prompt: SystemPromptConfig;
   user_input: UserInputConfig;
+  url_loader: URLLoaderConfig;
   inference: InferenceConfig;
   text_display: TextDisplayConfig;
   color_display: ColorDisplayConfig;
@@ -115,9 +124,17 @@ export interface NodeConfigByType {
 // Pipeline Context (flows through nodes)
 // ─────────────────────────────────────────────────────────────────
 
+export interface URLContextItem {
+  url: string;
+  label?: string;
+  content: string;
+  error?: string;
+}
+
 export interface PipelineContext {
   messages: PipelineMessage[];
   latestOutputs: ToolCallResult[];
+  urlContext: URLContextItem[];
   metadata: PipelineMetadata;
 }
 

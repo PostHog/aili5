@@ -322,3 +322,79 @@
   height: 14px;
   cursor: pointer;
 }
+
+/* URL Loader specific styles */
+.spinnerIcon {
+  animation: spin 1s linear infinite;
+}
+
+.urlStatus {
+  padding: 0.625rem;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--foreground) 4%, transparent);
+  font-size: 0.8125rem;
+}
+
+.urlLoading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: color-mix(in srgb, var(--foreground) 60%, transparent);
+}
+
+.urlError {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #ef4444;
+}
+
+.urlLoaded {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.urlLoadedHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: #10b981;
+}
+
+.urlLink {
+  color: color-mix(in srgb, var(--foreground) 50%, transparent);
+  transition: color 0.15s ease;
+}
+
+.urlLink:hover {
+  color: var(--foreground);
+}
+
+.urlPreview {
+  max-height: 100px;
+  overflow: hidden;
+  padding: 0.5rem;
+  background: color-mix(in srgb, var(--foreground) 4%, transparent);
+  border-radius: 4px;
+  font-size: 0.6875rem;
+  line-height: 1.4;
+}
+
+.urlPreview pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: inherit;
+  color: color-mix(in srgb, var(--foreground) 70%, transparent);
+}
+
+.urlSize {
+  font-size: 0.6875rem;
+  color: color-mix(in srgb, var(--foreground) 50%, transparent);
+}
+
+.urlEmpty {
+  color: color-mix(in srgb, var(--foreground) 50%, transparent);
+  font-style: italic;
+}
