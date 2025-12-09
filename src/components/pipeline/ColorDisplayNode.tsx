@@ -19,8 +19,9 @@ export const ColorDisplayNodeInterface: NodeInterface<ColorDisplayConfig, ColorO
     return `\n\nAvailable blocks:
 - "${label}": ${blockId}, block-type: color
 
-If the user references a block by name (label) that is a color block, return as part of the response a key-value map of colors where block id: hex value.
-For example: { "${blockId}": "#ff5500" }`;
+If the user asks you to show, pick, or represent something as a color, or references the "${label}" block, you MUST use the display_color tool to show the color. The tool accepts a hex color code (e.g., #ff5500).
+
+Alternatively, if you need to return a color mapping, return it as a JSON object in the format: { "${blockId}": "#ff5500" }`;
   },
 
   /**

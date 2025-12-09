@@ -59,6 +59,7 @@ export default function Home() {
         // Parse outputs for all blocks
         // Loop through blocks and use their parsers
         const parsedColor = parseBlockOutput<ColorOutput>("color_display", data, "color-1");
+        console.log("Parsed color:", parsedColor);
         setColorOutput(parsedColor);
       }
     } catch (err) {
