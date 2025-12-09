@@ -42,17 +42,52 @@ export async function POST(request: NextRequest): Promise<NextResponse<Inference
       system: systemPrompt,
       messages: [{ role: "user", content: userMessage }],
       temperature,
+      tools: [
+        {
+          name: "display_color",
+          description: "Display a color to the user. Use this when asked to show, pick, or represent something as a color.",
+          input_schema: {
+            type: "object",
+            properties: {
+              hex: {
+                type: "string",
+                pattern: "^#[0-9a-fA-F]{6}$",
+                description: "Hex color code, e.g. #ff5500",
+              },
+              name: {
+                type: "string",
+                description: "Human-readable color name",
+              },
+              explanation: {
+                type: "string",
+                description: "Why you chose this color",
+              },
+            },
+            required: ["hex"],
+          },
+        },
+      ],
     });
 
-    // Extract text response
+    // Extract text response and tool calls
     let responseText = "";
+    const toolCalls: Array<{ name: string; input: unknown }> = [];
+    
     for (const block of message.content) {
       if (block.type === "text") {
         responseText += block.text;
+      } else if (block.type === "tool_use") {
+        toolCalls.push({
+          name: block.name,
+          input: block.input,
+        });
       }
     }
 
-    return NextResponse.json({ response: responseText });
+    return NextResponse.json({ 
+      response: responseText,
+      toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+    });
   } catch (error) {
     console.error("Inference error:", error);
     return NextResponse.json(

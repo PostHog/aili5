@@ -55,6 +55,7 @@ export interface TextDisplayConfig {
 
 export interface ColorDisplayConfig {
   label?: string;
+  description?: string;
   showHex?: boolean;
 }
 
@@ -237,6 +238,7 @@ export interface InferenceRequest {
 export interface InferenceResponse {
   response: string;
   error?: string;
+  toolCalls?: Array<{ name: string; input: unknown }>;
 }
 
 // Pipeline execution request

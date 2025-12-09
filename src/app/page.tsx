@@ -5,8 +5,11 @@ import {
   SystemPromptNode,
   ModelAndInferenceNode,
   OutputNode,
+  ColorDisplayNode,
 } from "@/components/pipeline";
-import type { ModelId, InferenceRequest, InferenceResponse } from "@/types/pipeline";
+import { generateColorBlockMetadata } from "@/components/pipeline/ColorDisplayNode";
+import { parseBlockOutput } from "@/lib/blockParsers";
+import type { ModelId, InferenceRequest, InferenceResponse, ColorDisplayConfig, ColorOutput } from "@/types/pipeline";
 import styles from "./page.module.css";
 
 export default function Home() {
@@ -17,15 +20,25 @@ export default function Home() {
   const [response, setResponse] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [colorConfig, setColorConfig] = useState<ColorDisplayConfig>({
+    label: "Mood Color",
+    description: "A color that represents the mood or emotion",
+    showHex: true,
+  });
+  const [colorOutput, setColorOutput] = useState<ColorOutput | undefined>(undefined);
 
   const handleRunInference = async () => {
     setLoading(true);
     setError(null);
     setResponse("");
+    setColorOutput(undefined);
 
     try {
+      // Add block metadata to system prompt
+      const blockMetadata = generateColorBlockMetadata(colorConfig, "color-1");
+
       const requestBody: InferenceRequest = {
-        systemPrompt,
+        systemPrompt: systemPrompt + blockMetadata,
         userMessage,
         model,
         temperature,
@@ -43,6 +56,11 @@ export default function Home() {
         setError(data.error);
       } else {
         setResponse(data.response);
+        
+        // Parse outputs for all blocks
+        // Loop through blocks and use their parsers
+        const parsedColor = parseBlockOutput<ColorOutput>("color_display", data, "color-1");
+        setColorOutput(parsedColor);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to run inference");
@@ -59,7 +77,15 @@ export default function Home() {
       </header>
 
       <main className={styles.pipeline}>
-        <SystemPromptNode value={systemPrompt} onChange={setSystemPrompt} />
+        <SystemPromptNode value={systemPrompt} onChange={setSystemPrompt} blockId="system-prompt-1" />
+
+        <ColorDisplayNode
+          config={colorConfig}
+          output={colorOutput}
+          blockId="color-1"
+          loading={loading}
+          onConfigChange={setColorConfig}
+        />
 
         <ModelAndInferenceNode
           model={model}
@@ -70,9 +96,10 @@ export default function Home() {
           onTemperatureChange={setTemperature}
           onUserMessageChange={setUserMessage}
           onRun={handleRunInference}
+          blockId="inference-1"
         />
 
-        <OutputNode response={response} loading={loading} error={error} />
+        <OutputNode response={response} loading={loading} error={error} blockId="text-display-1" />
       </main>
     </div>
   );

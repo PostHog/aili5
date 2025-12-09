@@ -57,3 +57,13 @@
   border-right: 6px solid transparent;
   border-top: 8px solid var(--foreground);
 }
+
+.blockId {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid color-mix(in srgb, var(--foreground) 10%, transparent);
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: color-mix(in srgb, var(--foreground) 50%, transparent);
+  text-align: center;
+}

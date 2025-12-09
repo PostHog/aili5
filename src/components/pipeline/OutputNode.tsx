@@ -5,14 +5,16 @@ interface OutputNodeProps {
   response: string;
   loading: boolean;
   error: string | null;
+  blockId?: string;
 }
 
-export function OutputNode({ response, loading, error }: OutputNodeProps) {
+export function OutputNode({ response, loading, error, blockId }: OutputNodeProps) {
   return (
     <PipelineNode
       title="Output"
       description="The model's response appears here"
       isLast
+      blockId={blockId}
     >
       <div className={styles.outputContainer}>
         {error ? (

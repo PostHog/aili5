@@ -5,6 +5,7 @@ interface PipelineNodeProps {
   description: string;
   children: React.ReactNode;
   isLast?: boolean;
+  blockId?: string;
 }
 
 export function PipelineNode({
@@ -12,6 +13,7 @@ export function PipelineNode({
   description,
   children,
   isLast = false,
+  blockId,
 }: PipelineNodeProps) {
   return (
     <div className={styles.nodeWrapper}>
@@ -21,6 +23,7 @@ export function PipelineNode({
           <p className={styles.description}>{description}</p>
         </div>
         <div className={styles.content}>{children}</div>
+        {blockId && <div className={styles.blockId}>{blockId}</div>}
       </div>
       {!isLast && <div className={styles.connector} />}
     </div>

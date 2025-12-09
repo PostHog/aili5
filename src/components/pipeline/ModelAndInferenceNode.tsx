@@ -11,6 +11,7 @@ interface ModelAndInferenceNodeProps {
   onTemperatureChange: (temperature: number) => void;
   onUserMessageChange: (value: string) => void;
   onRun: () => void;
+  blockId?: string;
 }
 
 export function ModelAndInferenceNode({
@@ -22,11 +23,13 @@ export function ModelAndInferenceNode({
   onTemperatureChange,
   onUserMessageChange,
   onRun,
+  blockId,
 }: ModelAndInferenceNodeProps) {
   return (
     <PipelineNode
       title="Model & Inference"
       description="Configure the model and run your prompt"
+      blockId={blockId}
     >
       <div className={styles.field}>
         <label className={styles.label} htmlFor="model-select">
