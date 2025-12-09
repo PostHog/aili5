@@ -24,6 +24,7 @@ import type {
   InferenceConfig,
   SystemPromptConfig,
   URLLoaderConfig,
+  TextInputConfig,
   URLContextItem,
 } from "@/types/pipeline";
 import { getToolsForDownstreamNodes } from "@/lib/tools";
@@ -50,6 +51,8 @@ function getDefaultConfig(type: NodeType): NodeConfigByType[NodeType] {
       return { placeholder: "Enter your message..." };
     case "url_loader":
       return { url: "" };
+    case "text_input":
+      return { label: "", placeholder: "Enter text to add to context..." };
     case "inference":
       return { model: "claude-sonnet-4-20250514", temperature: 0.7 };
     case "text_display":
@@ -76,7 +79,20 @@ interface DragData {
   fromPalette?: boolean;
 }
 
+// Fixed system prompt node that's always present
+const SYSTEM_PROMPT_NODE: PipelineNodeConfig = {
+  id: "system-prompt-fixed",
+  type: "system_prompt",
+  config: { prompt: "You are a helpful assistant." },
+};
+
 export function PipelineBuilder() {
+  // System prompt is stored separately and always exists
+  const [systemPromptConfig, setSystemPromptConfig] = useState<SystemPromptConfig>({
+    prompt: "You are a helpful assistant.",
+  });
+
+  // Other nodes (excludes system prompt)
   const [nodes, setNodes] = useState<PipelineNodeConfig[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeType, setActiveType] = useState<NodeType | null>(null);
@@ -129,16 +145,22 @@ export function PipelineBuilder() {
 
     // Dragging from palette - add new node
     if (activeData?.fromPalette && activeData.type) {
+      // Don't allow adding system_prompt from palette (it's fixed)
+      if (activeData.type === "system_prompt") return;
+
       const newNode: PipelineNodeConfig = {
         id: generateNodeId(),
         type: activeData.type,
         config: getDefaultConfig(activeData.type),
       };
 
-      // Find insertion index
+      // Find insertion index (account for fixed system prompt at index 0)
       if (over.id === "pipeline-canvas") {
         // Dropped on canvas - add to end
         setNodes((prev) => [...prev, newNode]);
+      } else if (over.id === "system-prompt-fixed") {
+        // Dropped on system prompt - insert at beginning
+        setNodes((prev) => [newNode, ...prev]);
       } else {
         // Dropped on existing node - insert before it
         setNodes((prev) => {
@@ -154,8 +176,11 @@ export function PipelineBuilder() {
       return;
     }
 
-    // Reordering existing nodes
-    if (active.id !== over.id) {
+    // Reordering existing nodes (system prompt cannot be reordered)
+    if (active.id !== over.id && active.id !== "system-prompt-fixed") {
+      // If trying to move before system prompt, ignore
+      if (over.id === "system-prompt-fixed") return;
+
       setNodes((prev) => {
         const oldIndex = prev.findIndex((n) => n.id === active.id);
         const newIndex = prev.findIndex((n) => n.id === over.id);
@@ -166,6 +191,9 @@ export function PipelineBuilder() {
   }, []);
 
   const handleRemoveNode = useCallback((id: string) => {
+    // Cannot remove the fixed system prompt
+    if (id === "system-prompt-fixed") return;
+
     setNodes((prev) => prev.filter((n) => n.id !== id));
     // Clean up associated state
     setUserInputs((prev) => {
@@ -187,6 +215,11 @@ export function PipelineBuilder() {
 
   const handleConfigChange = useCallback(
     (nodeId: string, config: NodeConfigByType[keyof NodeConfigByType]) => {
+      // Handle system prompt config separately
+      if (nodeId === "system-prompt-fixed") {
+        setSystemPromptConfig(config as SystemPromptConfig);
+        return;
+      }
       setNodes((prev) =>
         prev.map((n) => (n.id === nodeId ? { ...n, config } : n))
       );
@@ -257,10 +290,20 @@ export function PipelineBuilder() {
 
   const handleRunInference = useCallback(
     async (inferenceNodeId: string) => {
-      const nodeIndex = nodes.findIndex((n) => n.id === inferenceNodeId);
+      // Build the full node list including fixed system prompt
+      const fullNodes: PipelineNodeConfig[] = [
+        {
+          id: "system-prompt-fixed",
+          type: "system_prompt",
+          config: systemPromptConfig,
+        },
+        ...nodes,
+      ];
+
+      const nodeIndex = fullNodes.findIndex((n) => n.id === inferenceNodeId);
       if (nodeIndex === -1) return;
 
-      const inferenceNode = nodes[nodeIndex];
+      const inferenceNode = fullNodes[nodeIndex];
       const inferenceConfig = inferenceNode.config as InferenceConfig;
 
       // Get user input from the inference node itself
@@ -271,13 +314,10 @@ export function PipelineBuilder() {
       }
 
       // Gather context from preceding nodes
-      const precedingNodes = nodes.slice(0, nodeIndex);
+      const precedingNodes = fullNodes.slice(0, nodeIndex);
 
-      // Find system prompt
-      const systemPromptNode = precedingNodes.find((n) => n.type === "system_prompt");
-      let systemPrompt = systemPromptNode
-        ? (systemPromptNode.config as SystemPromptConfig).prompt
-        : "You are a helpful assistant.";
+      // System prompt is always at the start
+      let systemPrompt = systemPromptConfig.prompt;
 
       // Get tools for preceding output nodes
       const { tools, nodeIdByToolName } = getToolsForDownstreamNodes(nodes, nodeIndex);
@@ -310,6 +350,32 @@ export function PipelineBuilder() {
           const label = item.label || item.url;
           systemPrompt += `### ${label}\n`;
           systemPrompt += `Source: ${item.url}\n\n`;
+          systemPrompt += item.content;
+          systemPrompt += "\n\n---\n\n";
+        }
+      }
+
+      // Gather text input content from preceding text_input nodes
+      const textInputItems: { label: string; content: string }[] = [];
+      for (const node of precedingNodes) {
+        if (node.type === "text_input") {
+          const content = userInputs[node.id];
+          if (content && content.trim()) {
+            const config = node.config as TextInputConfig;
+            textInputItems.push({
+              label: config.label || "Text",
+              content: content.trim(),
+            });
+          }
+        }
+      }
+
+      // Append text input content to system prompt
+      if (textInputItems.length > 0) {
+        systemPrompt += "\n\n## Additional Context\n";
+        systemPrompt += "The following text has been provided for context:\n\n";
+        for (const item of textInputItems) {
+          systemPrompt += `### ${item.label}\n`;
           systemPrompt += item.content;
           systemPrompt += "\n\n---\n\n";
         }
@@ -375,13 +441,23 @@ export function PipelineBuilder() {
         setLoadingNodeId(null);
       }
     },
-    [nodes, userInputs, urlContexts]
+    [nodes, userInputs, urlContexts, systemPromptConfig]
   );
 
   // Find module info for drag overlay
   const activeModule = activeType
     ? MODULE_DEFINITIONS.find((m) => m.type === activeType)
     : null;
+
+  // Combined nodes: fixed system prompt + user-added nodes
+  const allNodes: PipelineNodeConfig[] = [
+    {
+      id: "system-prompt-fixed",
+      type: "system_prompt",
+      config: systemPromptConfig,
+    },
+    ...nodes,
+  ];
 
   return (
     <DndContext
@@ -392,7 +468,7 @@ export function PipelineBuilder() {
     >
       <div className={styles.builder}>
         <PipelineCanvas
-          nodes={nodes}
+          nodes={allNodes}
           onRemoveNode={handleRemoveNode}
           onConfigChange={handleConfigChange}
           userInputs={userInputs}

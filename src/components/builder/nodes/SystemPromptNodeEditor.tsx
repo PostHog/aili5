@@ -11,6 +11,9 @@ interface SystemPromptNodeEditorProps {
 export function SystemPromptNodeEditor({ config, onChange }: SystemPromptNodeEditorProps) {
   return (
     <div className={styles.nodeEditor}>
+      <p className={styles.hint}>
+        Sets the tone, behavior and identity for the robot. Be as descriptive or whimsical as you like.
+      </p>
       <textarea
         className={styles.textarea}
         value={config.prompt}

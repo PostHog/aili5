@@ -18,6 +18,7 @@ export type NodeType =
   | "system_prompt"
   | "user_input"
   | "url_loader"
+  | "text_input"
   | "inference"
   | "text_display"
   | "color_display"
@@ -45,6 +46,13 @@ export interface URLLoaderConfig {
   url: string;
   /** Label for this context source */
   label?: string;
+}
+
+export interface TextInputConfig {
+  /** Label for this text input */
+  label?: string;
+  /** Placeholder text */
+  placeholder?: string;
 }
 
 export interface InferenceConfig {
@@ -110,6 +118,7 @@ export interface NodeConfigByType {
   system_prompt: SystemPromptConfig;
   user_input: UserInputConfig;
   url_loader: URLLoaderConfig;
+  text_input: TextInputConfig;
   inference: InferenceConfig;
   text_display: TextDisplayConfig;
   color_display: ColorDisplayConfig;

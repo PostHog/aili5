@@ -12,6 +12,7 @@ import {
   Webhook,
   ClipboardList,
   Link,
+  FileText,
   type LucideIcon,
 } from "lucide-react";
 import type { NodeType } from "@/types/pipeline";
@@ -30,6 +31,7 @@ interface ModuleDefinition {
 const COLORS = {
   blue: "#3B82F6",      // System prompt - trustworthy blue
   teal: "#14B8A6",      // URL loader - web teal
+  indigo: "#6366F1",    // Text input - calm indigo
   yellow: "#FBBF24",    // LLM inference - cheerful yellow
   grey: "#6B7280",      // Color output - neutral grey
   purple: "#8B5CF6",    // Icon output - vibrant purple
@@ -39,15 +41,17 @@ const COLORS = {
   red: "#EF4444",       // Survey - attention red
 };
 
+// System prompt definition kept separate for rendering (not draggable)
+export const SYSTEM_PROMPT_MODULE: ModuleDefinition = {
+  type: "system_prompt",
+  name: "System Prompt",
+  description: "Set model behavior",
+  icon: MessageSquare,
+  category: "input",
+  color: COLORS.blue,
+};
+
 export const MODULE_DEFINITIONS: ModuleDefinition[] = [
-  {
-    type: "system_prompt",
-    name: "System Prompt",
-    description: "Set model behavior",
-    icon: MessageSquare,
-    category: "input",
-    color: COLORS.blue,
-  },
   {
     type: "url_loader",
     name: "URL Loader",
@@ -55,6 +59,14 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     icon: Link,
     category: "input",
     color: COLORS.teal,
+  },
+  {
+    type: "text_input",
+    name: "Text",
+    description: "Add text to context",
+    icon: FileText,
+    category: "input",
+    color: COLORS.indigo,
   },
   {
     type: "inference",

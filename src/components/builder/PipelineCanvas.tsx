@@ -15,7 +15,7 @@ import type {
   ColorOutput,
   URLContextItem,
 } from "@/types/pipeline";
-import { MODULE_DEFINITIONS } from "./ModulePalette";
+import { MODULE_DEFINITIONS, SYSTEM_PROMPT_MODULE } from "./ModulePalette";
 import { NodeRenderer } from "./nodes/NodeRenderer";
 import styles from "./PipelineCanvas.module.css";
 
@@ -77,8 +77,12 @@ function SortableNode({
     transition,
   };
 
-  const moduleInfo = MODULE_DEFINITIONS.find((m) => m.type === node.type);
+  // Look up module info (system prompt is not in MODULE_DEFINITIONS)
+  const moduleInfo = node.type === "system_prompt"
+    ? SYSTEM_PROMPT_MODULE
+    : MODULE_DEFINITIONS.find((m) => m.type === node.type);
   const Icon = moduleInfo?.icon;
+  const isFixedSystemPrompt = node.id === "system-prompt-fixed";
 
   // For color_display nodes, use the generated color if available
   let nodeColor = moduleInfo?.color;
@@ -101,13 +105,15 @@ function SortableNode({
       >
         <div className={styles.nodeHeader}>
           <div className={styles.nodeHeaderLeft}>
-            <div
-              className={styles.dragHandle}
-              {...attributes}
-              {...listeners}
-            >
-              <GripVertical size={16} />
-            </div>
+            {!isFixedSystemPrompt && (
+              <div
+                className={styles.dragHandle}
+                {...attributes}
+                {...listeners}
+              >
+                <GripVertical size={16} />
+              </div>
+            )}
             {Icon && (
               <div className={styles.nodeIcon}>
                 <Icon size={16} />
@@ -115,16 +121,18 @@ function SortableNode({
             )}
             <span className={styles.nodeName}>{moduleInfo?.name || node.type}</span>
           </div>
-          <button
-            className={styles.removeButton}
-            onClick={(e) => {
-              e.stopPropagation();
-              onRemove();
-            }}
-            title="Remove node"
-          >
-            <X size={14} />
-          </button>
+          {!isFixedSystemPrompt && (
+            <button
+              className={styles.removeButton}
+              onClick={(e) => {
+                e.stopPropagation();
+                onRemove();
+              }}
+              title="Remove node"
+            >
+              <X size={14} />
+            </button>
+          )}
         </div>
         <div className={styles.nodeBody}>
           <NodeRenderer

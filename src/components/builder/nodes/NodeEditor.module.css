@@ -398,3 +398,16 @@
   color: color-mix(in srgb, var(--foreground) 50%, transparent);
   font-style: italic;
 }
+
+/* Text input specific styles */
+.labelRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.characterCount {
+  font-size: 0.6875rem;
+  color: color-mix(in srgb, var(--foreground) 50%, transparent);
+  font-variant-numeric: tabular-nums;
+}

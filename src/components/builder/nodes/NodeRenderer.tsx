@@ -8,6 +8,7 @@ import type {
   IconDisplayConfig,
   ColorDisplayConfig,
   URLLoaderConfig,
+  TextInputConfig,
   URLContextItem,
   TextOutput,
   IconOutput,
@@ -18,6 +19,7 @@ import { InferenceNodeEditor } from "./InferenceNodeEditor";
 import { IconDisplayNodeEditor } from "./IconDisplayNodeEditor";
 import { ColorDisplayNodeEditor } from "./ColorDisplayNodeEditor";
 import { URLLoaderNodeEditor } from "./URLLoaderNodeEditor";
+import { TextInputNodeEditor } from "./TextInputNodeEditor";
 
 interface NodeRendererProps {
   node: PipelineNodeConfig;
@@ -93,6 +95,17 @@ export function NodeRenderer({
           onLoadURL={onLoadURL || (() => {})}
           nodeId={node.id}
           loading={isLoading}
+        />
+      );
+
+    case "text_input":
+      return (
+        <TextInputNodeEditor
+          config={node.config as TextInputConfig}
+          onChange={(config) => onConfigChange(node.id, config)}
+          value={userInputValue}
+          onValueChange={(value) => onUserInputChange?.(node.id, value)}
+          nodeId={node.id}
         />
       );
 
