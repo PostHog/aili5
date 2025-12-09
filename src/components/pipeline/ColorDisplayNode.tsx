@@ -2,52 +2,53 @@
 
 import { PipelineNode } from "./PipelineNode";
 import type { ColorDisplayConfig, ColorOutput, InferenceResponse } from "@/types/pipeline";
+import type { NodeInterface } from "@/lib/nodeInterface";
 import { parseColorFromResponse } from "@/lib/colorUtils";
 import styles from "./nodes.module.css";
 
 /**
- * Generate block metadata string for system prompt
+ * Color Display Node Interface
+ * Implements NodeInterface for color display blocks
  */
-export function generateColorBlockMetadata(
-  config: ColorDisplayConfig,
-  blockId: string = "color-1"
-): string {
-  const label = config.label || "Mood Color";
-  return `\n\nAvailable blocks:
+export const ColorDisplayNodeInterface: NodeInterface<ColorDisplayConfig, ColorOutput> = {
+  /**
+   * Generate block metadata string for system prompt
+   */
+  meta: (config: ColorDisplayConfig, blockId: string = "color-1"): string => {
+    const label = config.label || "Mood Color";
+    return `\n\nAvailable blocks:
 - "${label}": ${blockId}, block-type: color
 
 If the user references a block by name (label) that is a color block, return as part of the response a key-value map of colors where block id: hex value.
 For example: { "${blockId}": "#ff5500" }`;
-}
+  },
 
-/**
- * Parse color output from inference response
- * Handles both tool calls and response text parsing
- */
-export function parseColorOutput(
-  response: InferenceResponse,
-  blockId: string = "color-1"
-): ColorOutput | undefined {
-  // First, try to parse from tool calls
-  if (response.toolCalls) {
-    const colorToolCall = response.toolCalls.find((tc) => tc.name === "display_color");
-    if (colorToolCall && colorToolCall.input) {
-      const input = colorToolCall.input as Record<string, unknown>;
-      return {
-        hex: input.hex as string,
-        name: input.name as string | undefined,
-        explanation: input.explanation as string | undefined,
-      };
+  /**
+   * Parse color output from inference response
+   * Handles both tool calls and response text parsing
+   */
+  parse: (response: InferenceResponse, blockId: string = "color-1"): ColorOutput | undefined => {
+    // First, try to parse from tool calls
+    if (response.toolCalls) {
+      const colorToolCall = response.toolCalls.find((tc) => tc.name === "display_color");
+      if (colorToolCall && colorToolCall.input) {
+        const input = colorToolCall.input as Record<string, unknown>;
+        return {
+          hex: input.hex as string,
+          name: input.name as string | undefined,
+          explanation: input.explanation as string | undefined,
+        };
+      }
     }
-  }
 
-  // Fallback: try to parse from response text
-  if (response.response) {
-    return parseColorFromResponse(response.response, blockId);
-  }
+    // Fallback: try to parse from response text
+    if (response.response) {
+      return parseColorFromResponse(response.response, blockId);
+    }
 
-  return undefined;
-}
+    return undefined;
+  },
+};
 
 interface ColorDisplayNodeProps {
   config: ColorDisplayConfig;

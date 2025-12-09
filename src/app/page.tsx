@@ -7,8 +7,7 @@ import {
   OutputNode,
   ColorDisplayNode,
 } from "@/components/pipeline";
-import { generateColorBlockMetadata } from "@/components/pipeline/ColorDisplayNode";
-import { parseBlockOutput } from "@/lib/blockParsers";
+import { generateBlockMetadata, parseBlockOutput } from "@/lib/blockParsers";
 import type { ModelId, InferenceRequest, InferenceResponse, ColorDisplayConfig, ColorOutput } from "@/types/pipeline";
 import styles from "./page.module.css";
 
@@ -34,8 +33,8 @@ export default function Home() {
     setColorOutput(undefined);
 
     try {
-      // Add block metadata to system prompt
-      const blockMetadata = generateColorBlockMetadata(colorConfig, "color-1");
+      // Add block metadata to system prompt from all nodes
+      const blockMetadata = generateBlockMetadata("color_display", colorConfig, "color-1");
 
       const requestBody: InferenceRequest = {
         systemPrompt: systemPrompt + blockMetadata,

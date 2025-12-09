@@ -1,26 +1,39 @@
 import type { InferenceResponse } from "@/types/pipeline";
-import { parseColorOutput } from "@/components/pipeline/ColorDisplayNode";
-import type { ColorOutput } from "@/types/pipeline";
+import type { NodeInterface } from "@/lib/nodeInterface";
+import { ColorDisplayNodeInterface } from "@/components/pipeline/ColorDisplayNode";
+import { SystemPromptNodeInterface } from "@/components/pipeline/SystemPromptNode";
+import { ModelAndInferenceNodeInterface } from "@/components/pipeline/ModelAndInferenceNode";
+import { OutputNodeInterface } from "@/components/pipeline/OutputNode";
 
 /**
- * Block parser interface
- * Each block type can provide a parser function
+ * Registry of node interfaces by block type
+ * Each node type implements NodeInterface with meta and parse methods
  */
-export interface BlockParser<T = unknown> {
-  parse: (response: InferenceResponse, blockId: string) => T | undefined;
-}
-
-/**
- * Registry of block parsers by block type
- */
-const blockParsers: Record<string, BlockParser> = {
-  color_display: {
-    parse: (response, blockId) => parseColorOutput(response, blockId) as ColorOutput | undefined,
-  },
-  // Add more block parsers here as needed
-  // icon_display: { parse: parseIconOutput },
-  // gauge_display: { parse: parseGaugeOutput },
+const nodeInterfaces: Record<string, NodeInterface<any, any>> = {
+  color_display: ColorDisplayNodeInterface,
+  system_prompt: SystemPromptNodeInterface,
+  inference: ModelAndInferenceNodeInterface,
+  text_display: OutputNodeInterface,
+  // Add more node interfaces here as needed
+  // icon_display: IconDisplayNodeInterface,
+  // gauge_display: GaugeDisplayNodeInterface,
 };
+
+/**
+ * Generate block metadata for a specific node type
+ * Combines metadata from all nodes of the given type
+ */
+export function generateBlockMetadata<TConfig = unknown>(
+  blockType: string,
+  config: TConfig,
+  blockId: string
+): string {
+  const nodeInterface = nodeInterfaces[blockType];
+  if (!nodeInterface) {
+    return "";
+  }
+  return nodeInterface.meta(config, blockId);
+}
 
 /**
  * Parse output for a specific block type
@@ -30,17 +43,17 @@ export function parseBlockOutput<T = unknown>(
   response: InferenceResponse,
   blockId: string
 ): T | undefined {
-  const parser = blockParsers[blockType];
-  if (!parser) {
+  const nodeInterface = nodeInterfaces[blockType];
+  if (!nodeInterface) {
     return undefined;
   }
-  return parser.parse(response, blockId) as T | undefined;
+  return nodeInterface.parse(response, blockId) as T | undefined;
 }
 
 /**
  * Get all registered block types
  */
 export function getRegisteredBlockTypes(): string[] {
-  return Object.keys(blockParsers);
+  return Object.keys(nodeInterfaces);
 }
 

@@ -1,6 +1,17 @@
 import { PipelineNode } from "./PipelineNode";
 import { AVAILABLE_MODELS, type ModelId } from "@/types/pipeline";
+import type { NodeInterface } from "@/lib/nodeInterface";
+import type { InferenceConfig, InferenceResponse } from "@/types/pipeline";
 import styles from "./nodes.module.css";
+
+/**
+ * Model and Inference Node Interface
+ * Inference nodes don't generate metadata or parse output (they trigger inference)
+ */
+export const ModelAndInferenceNodeInterface: NodeInterface<InferenceConfig, never> = {
+  meta: () => "", // Inference nodes don't add metadata
+  parse: () => undefined, // Inference nodes don't parse output
+};
 
 interface ModelAndInferenceNodeProps {
   model: ModelId;

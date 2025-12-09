@@ -1,5 +1,16 @@
 import { PipelineNode } from "./PipelineNode";
+import type { NodeInterface } from "@/lib/nodeInterface";
+import type { SystemPromptConfig, InferenceResponse } from "@/types/pipeline";
 import styles from "./nodes.module.css";
+
+/**
+ * System Prompt Node Interface
+ * System prompt nodes don't generate metadata or parse output
+ */
+export const SystemPromptNodeInterface: NodeInterface<SystemPromptConfig, never> = {
+  meta: () => "", // System prompt nodes don't add metadata
+  parse: () => undefined, // System prompt nodes don't parse output
+};
 
 interface SystemPromptNodeProps {
   value: string;
