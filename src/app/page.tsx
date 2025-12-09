@@ -3,8 +3,7 @@
 import { useState } from "react";
 import {
   SystemPromptNode,
-  ModelSettingsNode,
-  RunInferenceNode,
+  ModelAndInferenceNode,
   OutputNode,
 } from "@/components/pipeline";
 import type { ModelId, InferenceRequest, InferenceResponse } from "@/types/pipeline";
@@ -62,16 +61,13 @@ export default function Home() {
       <main className={styles.pipeline}>
         <SystemPromptNode value={systemPrompt} onChange={setSystemPrompt} />
 
-        <ModelSettingsNode
+        <ModelAndInferenceNode
           model={model}
           temperature={temperature}
-          onModelChange={setModel}
-          onTemperatureChange={setTemperature}
-        />
-
-        <RunInferenceNode
           userMessage={userMessage}
           loading={loading}
+          onModelChange={setModel}
+          onTemperatureChange={setTemperature}
           onUserMessageChange={setUserMessage}
           onRun={handleRunInference}
         />
