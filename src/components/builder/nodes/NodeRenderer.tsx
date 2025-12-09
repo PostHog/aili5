@@ -9,10 +9,12 @@ import type {
   ColorDisplayConfig,
   URLLoaderConfig,
   TextInputConfig,
+  GenieConfig,
   URLContextItem,
   TextOutput,
   IconOutput,
   ColorOutput,
+  GenieOutput,
 } from "@/types/pipeline";
 import { SystemPromptNodeEditor } from "./SystemPromptNodeEditor";
 import { InferenceNodeEditor } from "./InferenceNodeEditor";
@@ -20,6 +22,7 @@ import { IconDisplayNodeEditor } from "./IconDisplayNodeEditor";
 import { ColorDisplayNodeEditor } from "./ColorDisplayNodeEditor";
 import { URLLoaderNodeEditor } from "./URLLoaderNodeEditor";
 import { TextInputNodeEditor } from "./TextInputNodeEditor";
+import { GenieNodeEditor } from "./GenieNodeEditor";
 
 interface NodeRendererProps {
   node: PipelineNodeConfig;
@@ -31,6 +34,12 @@ interface NodeRendererProps {
   isLoading?: boolean;
   output?: unknown;
   urlContext?: URLContextItem | null;
+  // Genie-specific props
+  genieConversation?: GenieOutput | null;
+  onGenieSelfInference?: (nodeId: string, message: string) => void;
+  onGenieSaveBackstory?: (nodeId: string) => void;
+  genieHasUpdate?: boolean;
+  onGenieClearUpdate?: (nodeId: string) => void;
 }
 
 export function NodeRenderer({
@@ -43,6 +52,11 @@ export function NodeRenderer({
   isLoading = false,
   output = null,
   urlContext = null,
+  genieConversation,
+  onGenieSelfInference,
+  onGenieSaveBackstory,
+  genieHasUpdate,
+  onGenieClearUpdate,
 }: NodeRendererProps) {
   switch (node.type) {
     case "system_prompt":
@@ -106,6 +120,20 @@ export function NodeRenderer({
           value={userInputValue}
           onValueChange={(value) => onUserInputChange?.(node.id, value)}
           nodeId={node.id}
+        />
+      );
+
+    case "genie":
+      return (
+        <GenieNodeEditor
+          config={node.config as GenieConfig}
+          onChange={(config) => onConfigChange(node.id, config)}
+          conversation={genieConversation || null}
+          onSelfInference={(message) => onGenieSelfInference?.(node.id, message)}
+          onSaveBackstory={() => onGenieSaveBackstory?.(node.id)}
+          loading={isLoading}
+          hasUpdate={genieHasUpdate || false}
+          onClearUpdate={() => onGenieClearUpdate?.(node.id)}
         />
       );
 

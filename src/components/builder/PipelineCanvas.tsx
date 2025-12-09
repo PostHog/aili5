@@ -14,6 +14,7 @@ import type {
   NodeConfigByType,
   ColorOutput,
   URLContextItem,
+  GenieOutput,
 } from "@/types/pipeline";
 import { MODULE_DEFINITIONS, SYSTEM_PROMPT_MODULE } from "./ModulePalette";
 import { NodeRenderer } from "./nodes/NodeRenderer";
@@ -33,6 +34,12 @@ interface PipelineCanvasProps {
   urlContexts: Record<string, URLContextItem>;
   activeNodeId: string | null;
   overNodeId: string | null;
+  // Genie-specific props
+  genieConversations?: Record<string, GenieOutput>;
+  onGenieSelfInference?: (nodeId: string, message: string) => void;
+  onGenieSaveBackstory?: (nodeId: string) => void;
+  genieBackstoryUpdates?: Record<string, boolean>;
+  onGenieClearUpdate?: (nodeId: string) => void;
 }
 
 interface SortableNodeProps {
@@ -49,6 +56,12 @@ interface SortableNodeProps {
   urlContext: URLContextItem | null;
   isLast: boolean;
   isDropTarget: boolean;
+  // Genie-specific props
+  genieConversation?: GenieOutput | null;
+  onGenieSelfInference?: (nodeId: string, message: string) => void;
+  onGenieSaveBackstory?: (nodeId: string) => void;
+  genieHasUpdate?: boolean;
+  onGenieClearUpdate?: (nodeId: string) => void;
 }
 
 function SortableNode({
@@ -65,6 +78,11 @@ function SortableNode({
   urlContext,
   isLast,
   isDropTarget,
+  genieConversation,
+  onGenieSelfInference,
+  onGenieSaveBackstory,
+  genieHasUpdate,
+  onGenieClearUpdate,
 }: SortableNodeProps) {
   const {
     attributes,
@@ -119,6 +137,7 @@ function SortableNode({
                 className={styles.dragHandle}
                 {...attributes}
                 {...listeners}
+                suppressHydrationWarning
               >
                 <GripVertical size={16} />
               </div>
@@ -129,6 +148,9 @@ function SortableNode({
               </div>
             )}
             <span className={styles.nodeName}>{moduleInfo?.name || node.type}</span>
+            {genieHasUpdate && (
+              <span className={styles.notificationDot} title="Backstory updated" />
+            )}
           </div>
           {!isFixedSystemPrompt && (
             <button
@@ -154,6 +176,11 @@ function SortableNode({
             isLoading={isLoading || isLoadingUrl}
             output={output}
             urlContext={urlContext}
+            genieConversation={genieConversation}
+            onGenieSelfInference={onGenieSelfInference}
+            onGenieSaveBackstory={onGenieSaveBackstory}
+            genieHasUpdate={genieHasUpdate}
+            onGenieClearUpdate={onGenieClearUpdate}
           />
         </div>
       </div>
@@ -190,6 +217,11 @@ export function PipelineCanvas({
   urlContexts,
   activeNodeId,
   overNodeId,
+  genieConversations,
+  onGenieSelfInference,
+  onGenieSaveBackstory,
+  genieBackstoryUpdates,
+  onGenieClearUpdate,
 }: PipelineCanvasProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: "pipeline-canvas",
@@ -235,6 +267,11 @@ export function PipelineCanvas({
                 urlContext={urlContexts[node.id] || null}
                 isLast={index === nodes.length - 1}
                 isDropTarget={overNodeId === node.id && activeNodeId !== node.id}
+                genieConversation={genieConversations?.[node.id]}
+                onGenieSelfInference={onGenieSelfInference}
+                onGenieSaveBackstory={onGenieSaveBackstory}
+                genieHasUpdate={genieBackstoryUpdates?.[node.id] || false}
+                onGenieClearUpdate={onGenieClearUpdate}
               />
             ))}
           </SortableContext>
