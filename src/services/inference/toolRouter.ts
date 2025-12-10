@@ -1,10 +1,10 @@
-import type { TextOutput, IconOutput, ColorOutput, GaugeOutput, EmojiOutput, PixelArtOutput } from "@/types/pipeline";
+import type { TextOutput, IconOutput, ColorOutput, GaugeOutput, EmojiOutput, PixelArtOutput, ScoreOutput, PassFailOutput } from "@/types/pipeline";
 import type { PipelineNodeConfig } from "@/types/pipeline";
 import type { InferenceResponse } from "@/lib/nodeInterface";
 import { parseBlockOutput } from "@/lib/blockParsers";
 
 // Output types union
-export type OutputData = TextOutput | IconOutput | ColorOutput | GaugeOutput | EmojiOutput | PixelArtOutput | null;
+export type OutputData = TextOutput | IconOutput | ColorOutput | GaugeOutput | EmojiOutput | PixelArtOutput | ScoreOutput | PassFailOutput | null;
 
 interface ToolCall {
   toolName: string;

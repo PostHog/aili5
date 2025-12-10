@@ -17,6 +17,8 @@ import {
   Smile,
   HelpCircle,
   Paintbrush,
+  Trophy,
+  CheckCircle2,
   type LucideIcon,
 } from "lucide-react";
 import type { NodeType } from "@/types/pipeline";
@@ -144,6 +146,22 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     icon: ClipboardList,
     category: "output",
     color: COLORS.red,
+  },
+  {
+    type: "score_display",
+    name: "Score",
+    description: "Display a score",
+    icon: Trophy,
+    category: "output",
+    color: "#EAB308", // gold/trophy
+  },
+  {
+    type: "pass_fail_display",
+    name: "Pass/Fail",
+    description: "Pass or fail result",
+    icon: CheckCircle2,
+    category: "output",
+    color: "#22C55E", // emerald green
   },
   {
     type: "genie",

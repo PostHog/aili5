@@ -13,6 +13,8 @@ import type {
   TextInputConfig,
   PaintConfig,
   GenieConfig,
+  ScoreDisplayConfig,
+  PassFailDisplayConfig,
   URLContextItem,
   TextOutput,
   IconOutput,
@@ -20,6 +22,8 @@ import type {
   EmojiOutput,
   PixelArtOutput,
   GenieOutput,
+  ScoreOutput,
+  PassFailOutput,
 } from "@/types/pipeline";
 import { SystemPromptNodeEditor } from "./SystemPromptNodeEditor";
 import { InferenceNodeEditor } from "./InferenceNodeEditor";
@@ -31,6 +35,8 @@ import { URLLoaderNodeEditor } from "./URLLoaderNodeEditor";
 import { TextInputNodeEditor } from "./TextInputNodeEditor";
 import { PaintNodeEditor } from "./PaintNodeEditor";
 import { GenieNodeEditor } from "./GenieNodeEditor";
+import { ScoreDisplayNodeEditor } from "./ScoreDisplayNodeEditor";
+import { PassFailDisplayNodeEditor } from "./PassFailDisplayNodeEditor";
 
 interface NodeRendererProps {
   node: PipelineNodeConfig;
@@ -48,6 +54,8 @@ interface NodeRendererProps {
   onGenieSaveBackstory?: (nodeId: string) => void;
   genieHasUpdate?: boolean;
   onGenieClearUpdate?: (nodeId: string) => void;
+  geniePendingPrompt?: string;
+  onGenieClearPendingPrompt?: (nodeId: string) => void;
   // Context inspector prop
   onInspectContext?: (nodeId: string) => void;
 }
@@ -67,6 +75,8 @@ export function NodeRenderer({
   onGenieSaveBackstory,
   genieHasUpdate,
   onGenieClearUpdate,
+  geniePendingPrompt,
+  onGenieClearPendingPrompt,
   onInspectContext,
 }: NodeRendererProps) {
   switch (node.type) {
@@ -178,6 +188,28 @@ export function NodeRenderer({
           hasUpdate={genieHasUpdate || false}
           onClearUpdate={() => onGenieClearUpdate?.(node.id)}
           onInspectContext={onInspectContext ? () => onInspectContext(node.id) : undefined}
+          pendingPrompt={geniePendingPrompt}
+          onClearPendingPrompt={() => onGenieClearPendingPrompt?.(node.id)}
+        />
+      );
+
+    case "score_display":
+      return (
+        <ScoreDisplayNodeEditor
+          config={node.config as ScoreDisplayConfig}
+          onChange={(config) => onConfigChange(node.id, config)}
+          output={output as ScoreOutput | null}
+          loading={isLoading}
+        />
+      );
+
+    case "pass_fail_display":
+      return (
+        <PassFailDisplayNodeEditor
+          config={node.config as PassFailDisplayConfig}
+          onChange={(config) => onConfigChange(node.id, config)}
+          output={output as PassFailOutput | null}
+          loading={isLoading}
         />
       );
 

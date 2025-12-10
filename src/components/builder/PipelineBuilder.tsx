@@ -19,6 +19,7 @@ import { PipelineCanvas } from "./PipelineCanvas";
 import { ContextInspector } from "./ContextInspector";
 import { InspectorConnector } from "./InspectorConnector";
 import { TutorialModal } from "./TutorialModal";
+import { GameLibraryModal } from "./GameLibraryModal";
 import type { NodeType } from "@/types/pipeline";
 import styles from "./PipelineBuilder.module.css";
 
@@ -46,6 +47,9 @@ export function PipelineBuilder() {
     isOpen: boolean;
     nodeType: NodeType | null;
   }>({ isOpen: false, nodeType: null });
+
+  // Game library modal state
+  const [gameLibraryOpen, setGameLibraryOpen] = useState(false);
 
   // Streaming state for inference nodes
   const [streamingState, setStreamingState] = useState<{
@@ -340,15 +344,18 @@ ${"#".repeat(60)}`;
     ...store.nodes,
   ];
 
-  // Get genie conversations and backstory updates for canvas
+  // Get genie conversations, backstory updates, and pending prompts for canvas
   const genieConversations: Record<string, GenieOutput> = {};
   const genieBackstoryUpdates: Record<string, boolean> = {};
+  const geniePendingPrompts: Record<string, string> = {};
   store.nodes.forEach((node) => {
     if (node.type === "genie") {
       const conv = getGenieConversation(store, node.id);
       if (conv) genieConversations[node.id] = conv;
       const hasUpdate = getGenieBackstoryUpdate(store, node.id);
       if (hasUpdate) genieBackstoryUpdates[node.id] = true;
+      const pendingPrompt = store.getNodeState(node.id, "genie:pendingPrompt") as string | undefined;
+      if (pendingPrompt) geniePendingPrompts[node.id] = pendingPrompt;
     }
   });
 
@@ -418,10 +425,15 @@ ${"#".repeat(60)}`;
           onGenieClearUpdate={(nodeId) => {
             store.clearNodeState(nodeId, "genie:backstoryUpdate");
           }}
+          geniePendingPrompts={geniePendingPrompts}
+          onGenieClearPendingPrompt={(nodeId) => {
+            store.clearNodeState(nodeId, "genie:pendingPrompt");
+          }}
           highlightedNodeId={highlightedNodeId}
           inspectedNodeId={inspectorState.isOpen ? inspectorState.targetNodeId : null}
           onInspectContext={toggleInspector}
           onOpenTutorial={handleOpenTutorial}
+          onOpenGameLibrary={() => setGameLibraryOpen(true)}
         />
         <ModulePalette onOpenTutorial={handleOpenTutorial} />
         <InspectorConnector
@@ -435,6 +447,11 @@ ${"#".repeat(60)}`;
         isOpen={tutorialState.isOpen}
         onClose={handleCloseTutorial}
         nodeType={tutorialState.nodeType}
+      />
+
+      <GameLibraryModal
+        isOpen={gameLibraryOpen}
+        onClose={() => setGameLibraryOpen(false)}
       />
 
       <DragOverlay>

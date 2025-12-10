@@ -8,8 +8,7 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, XCircle, HelpCircle } from "lucide-react";
-import { PipeIcon } from "./PipeIcon";
+import { GripVertical, XCircle, HelpCircle, Gamepad2 } from "lucide-react";
 import type {
   PipelineNodeConfig,
   NodeConfigByType,
@@ -40,12 +39,16 @@ interface PipelineCanvasProps {
   onGenieSaveBackstory?: (nodeId: string) => void;
   genieBackstoryUpdates?: Record<string, boolean>;
   onGenieClearUpdate?: (nodeId: string) => void;
+  geniePendingPrompts?: Record<string, string>;
+  onGenieClearPendingPrompt?: (nodeId: string) => void;
   // Context inspector props
   highlightedNodeId?: string | null;
   inspectedNodeId?: string | null;
   onInspectContext?: (nodeId: string) => void;
   // Tutorial props
   onOpenTutorial?: (nodeType: string) => void;
+  // Game library props
+  onOpenGameLibrary?: () => void;
   // Streaming props
   streamingNodeId?: string | null;
   streamingText?: string;
@@ -73,6 +76,8 @@ interface SortableNodeProps {
   onGenieSaveBackstory?: (nodeId: string) => void;
   genieHasUpdate?: boolean;
   onGenieClearUpdate?: (nodeId: string) => void;
+  geniePendingPrompt?: string;
+  onGenieClearPendingPrompt?: (nodeId: string) => void;
   // Context inspector props
   isHighlighted?: boolean;
   isInspected?: boolean;
@@ -104,6 +109,8 @@ function SortableNode({
   onGenieSaveBackstory,
   genieHasUpdate,
   onGenieClearUpdate,
+  geniePendingPrompt,
+  onGenieClearPendingPrompt,
   isHighlighted,
   isInspected,
   onInspectContext,
@@ -223,13 +230,38 @@ function SortableNode({
             onGenieSaveBackstory={onGenieSaveBackstory}
             genieHasUpdate={genieHasUpdate}
             onGenieClearUpdate={onGenieClearUpdate}
+            geniePendingPrompt={geniePendingPrompt}
+            onGenieClearPendingPrompt={onGenieClearPendingPrompt}
             onInspectContext={onInspectContext}
           />
         </div>
       </div>
       {mounted && !isLast && (
         <div className={styles.connector}>
-          <PipeIcon size={36} />
+          <svg width="20" height="48" viewBox="0 0 20 48" className={styles.connectorSvg}>
+            {/* Glow line background */}
+            <line
+              x1="10"
+              y1="0"
+              x2="10"
+              y2="48"
+              stroke="#3B82F6"
+              strokeWidth="14"
+              strokeOpacity="0.12"
+              strokeLinecap="round"
+            />
+            {/* Main connection line */}
+            <line
+              x1="10"
+              y1="0"
+              x2="10"
+              y2="48"
+              stroke="#3B82F6"
+              strokeWidth="3"
+              strokeOpacity="0.5"
+              strokeLinecap="round"
+            />
+          </svg>
         </div>
       )}
     </div>
@@ -264,10 +296,13 @@ export function PipelineCanvas({
   onGenieSaveBackstory,
   genieBackstoryUpdates,
   onGenieClearUpdate,
+  geniePendingPrompts,
+  onGenieClearPendingPrompt,
   highlightedNodeId,
   inspectedNodeId,
   onInspectContext,
   onOpenTutorial,
+  onOpenGameLibrary,
 }: PipelineCanvasProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: "pipeline-canvas",
@@ -284,11 +319,23 @@ export function PipelineCanvas({
   return (
     <div className={styles.canvas}>
       <div className={styles.header}>
-        <h2 className={styles.title}>Pipeline</h2>
-        {mounted && (
-          <span className={styles.nodeCount}>
-            {nodes.length} {nodes.length === 1 ? "node" : "nodes"}
-          </span>
+        <div className={styles.headerLeft}>
+          <h2 className={styles.title}>Pipeline</h2>
+          {mounted && (
+            <span className={styles.nodeCount}>
+              {nodes.length} {nodes.length === 1 ? "node" : "nodes"}
+            </span>
+          )}
+        </div>
+        {onOpenGameLibrary && (
+          <button
+            className={styles.gamesButton}
+            onClick={onOpenGameLibrary}
+            title="Open Game Library"
+          >
+            <Gamepad2 size={18} />
+            <span>Games</span>
+          </button>
         )}
       </div>
 
@@ -332,6 +379,8 @@ export function PipelineCanvas({
                 onGenieSaveBackstory={onGenieSaveBackstory}
                 genieHasUpdate={genieBackstoryUpdates?.[node.id] || false}
                 onGenieClearUpdate={onGenieClearUpdate}
+                geniePendingPrompt={geniePendingPrompts?.[node.id]}
+                onGenieClearPendingPrompt={onGenieClearPendingPrompt}
                 isHighlighted={highlightedNodeId === node.id}
                 isInspected={inspectedNodeId === node.id}
                 onInspectContext={onInspectContext}

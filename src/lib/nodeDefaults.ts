@@ -39,6 +39,10 @@ export function getDefaultConfig(type: NodeType): NodeConfigByType[NodeType] {
         temperature: 0.4,
         autoRespondOnUpdate: false,
       };
+    case "score_display":
+      return { maxScore: 100, showStars: true };
+    case "pass_fail_display":
+      return { passLabel: "PASS", failLabel: "FAIL" };
     default:
       return {} as NodeConfigByType[NodeType];
   }

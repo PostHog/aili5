@@ -6,6 +6,8 @@ import { EmojiDisplayNodeInterface } from "@/components/builder/nodes/EmojiDispl
 import { PixelArtDisplayNodeInterface } from "@/components/builder/nodes/PixelArtDisplayNodeEditor";
 import { PaintNodeInterface } from "@/components/builder/nodes/PaintNodeEditor";
 import { GenieNodeInterface } from "@/components/builder/nodes/GenieNodeEditor";
+import { ScoreDisplayNodeInterface } from "@/components/builder/nodes/ScoreDisplayNodeEditor";
+import { PassFailDisplayNodeInterface } from "@/components/builder/nodes/PassFailDisplayNodeEditor";
 
 /**
  * Built-in node interfaces for core node types
@@ -60,6 +62,8 @@ const nodeInterfaces: Record<string, NodeInterface<any, any>> = {
   emoji_display: EmojiDisplayNodeInterface,
   pixel_art_display: PixelArtDisplayNodeInterface,
   genie: GenieNodeInterface,
+  score_display: ScoreDisplayNodeInterface,
+  pass_fail_display: PassFailDisplayNodeInterface,
 };
 
 /**
