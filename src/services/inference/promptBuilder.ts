@@ -20,14 +20,24 @@ export function formatGenieContext(
   backstory: string,
   messages: GenieOutput["messages"]
 ): string {
-  let context = `\n\nGenie Context (name: ${genieName}):\n[Backstory: ${backstory}]\n\nConversation:\n`;
+  let context = `\n\n${"=".repeat(60)}\n`;
+  context += `GENIE CONVERSATION CONTEXT\n`;
+  context += `${"=".repeat(60)}\n`;
+  context += `Genie Name: ${genieName}\n`;
+  context += `Backstory: ${backstory}\n`;
+  context += `\n--- Conversation History ---\n`;
   for (const msg of messages) {
     if (msg.role === "user") {
       context += `User: ${msg.content}\n`;
+    } else if (msg.role === "system") {
+      context += `[System Message]: ${msg.content}\n`;
     } else {
       context += `${genieName}: ${msg.content}\n`;
     }
   }
+  context += `${"=".repeat(60)}\n`;
+  context += `END OF GENIE CONVERSATION CONTEXT\n`;
+  context += `${"=".repeat(60)}\n\n`;
   return context;
 }
 
@@ -87,9 +97,27 @@ export function buildSystemPrompt(
 
   // Add context from preceding nodes
   if (includeGenieConversations) {
+    // First, add all non-genie node metadata
+    for (const node of precedingNodes) {
+      if (node.type !== "genie") {
+        // Add block metadata for other node types
+        const metadata = generateBlockMetadata(node.type, node.config, node.id);
+        if (metadata) {
+          systemPrompt += metadata;
+        }
+      }
+    }
+
+    // Then, add genie tool metadata and conversations (clearly separated)
     for (const node of precedingNodes) {
       if (node.type === "genie") {
         const genieConfig = node.config as GenieConfig;
+        // Add genie tool metadata (tells LLM about the tool)
+        const genieMetadata = generateBlockMetadata(node.type, node.config, node.id);
+        if (genieMetadata) {
+          systemPrompt += genieMetadata;
+        }
+        // Add genie conversation context if it exists (clearly separated)
         const conversation = genieConversations[node.id];
         if (conversation && conversation.messages.length > 0) {
           const genieContext = formatGenieContext(
@@ -98,12 +126,6 @@ export function buildSystemPrompt(
             conversation.messages
           );
           systemPrompt += genieContext;
-        }
-      } else {
-        // Add block metadata for other node types
-        const metadata = generateBlockMetadata(node.type, node.config, node.id);
-        if (metadata) {
-          systemPrompt += metadata;
         }
       }
     }

@@ -6,9 +6,10 @@ import { usePipelineStore, type PipelineStore } from "@/store/pipelineStore";
 import { buildSystemPrompt } from "@/services/inference/promptBuilder";
 
 export interface GenieStateActions {
-  selfInference: (nodeId: string, userMessage: string) => Promise<void>;
+  selfInference: (nodeId: string, userMessage: string, skipAddingUserMessage?: boolean) => Promise<void>;
   saveBackstory: (nodeId: string) => Promise<void>;
   processBackstoryUpdates: (precedingNodes: PipelineNodeConfig[], response: InferenceResult, nodeIdByToolName?: Record<string, string>) => void;
+  addSystemMessage: (nodeId: string, message: string) => void;
 }
 
 // Helper functions to get/set genie state from nodeState
@@ -40,9 +41,10 @@ export function useGenieState(): GenieStateActions {
 
   /**
    * Handle genie self-inference (independent from main pipeline)
+   * @param skipAddingUserMessage - If true, don't add userMessage to conversation (used when message was already added as system)
    */
   const selfInference = useCallback(
-    async (nodeId: string, userMessage: string) => {
+    async (nodeId: string, userMessage: string, skipAddingUserMessage = false) => {
       const genieNode = store.nodes.find((n) => n.id === nodeId);
       if (!genieNode || genieNode.type !== "genie") return;
 
@@ -59,6 +61,8 @@ export function useGenieState(): GenieStateActions {
         for (const msg of conversation.messages) {
           if (msg.role === "user") {
             genieIdentityPrompt += `User: ${msg.content}\n`;
+          } else if (msg.role === "system") {
+            genieIdentityPrompt += `System: ${msg.content}\n`;
           } else {
             genieIdentityPrompt += `${genieConfig.name}: ${msg.content}\n`;
           }
@@ -108,11 +112,17 @@ export function useGenieState(): GenieStateActions {
           return;
         }
 
-        // Update conversation with user message and assistant response
+        // Update conversation with assistant response (and optionally user message)
+        const newMessages: GenieOutput["messages"] = skipAddingUserMessage
+          ? [{ role: "assistant" as const, content: result.response! }]
+          : [
+              { role: "user" as const, content: userMessage },
+              { role: "assistant" as const, content: result.response! },
+            ];
+
         const updatedMessages: GenieOutput["messages"] = [
           ...conversation.messages,
-          { role: "user", content: userMessage },
-          { role: "assistant", content: result.response! },
+          ...newMessages,
         ];
 
         setGenieConversation(store, nodeId, { messages: updatedMessages });
@@ -199,6 +209,31 @@ export function useGenieState(): GenieStateActions {
   );
 
   /**
+   * Add a system message to a genie's conversation and trigger response
+   */
+  const addSystemMessage = useCallback(
+    (nodeId: string, message: string) => {
+      const genieNode = store.nodes.find((n) => n.id === nodeId);
+      if (!genieNode || genieNode.type !== "genie") return;
+
+      const currentConversation = getGenieConversation(store, nodeId) || { messages: [] };
+      const systemMessage = {
+        role: "system" as const,
+        content: message,
+      };
+      const updatedMessages: GenieOutput["messages"] = [...currentConversation.messages, systemMessage];
+
+      setGenieConversation(store, nodeId, { messages: updatedMessages });
+      setGenieBackstoryUpdate(store, nodeId, true);
+
+      // Immediately trigger genie to respond to the system message
+      // Skip adding user message since we already added it as system message
+      selfInference(nodeId, message, true);
+    },
+    [store, selfInference]
+  );
+
+  /**
    * Process genie backstory updates from inference response
    */
   const processBackstoryUpdates = useCallback(
@@ -234,20 +269,9 @@ export function useGenieState(): GenieStateActions {
             }
           }
 
-          // Update conversation if message provided
+          // Update conversation if message provided (legacy tool call handling)
           if (input.message) {
-            const currentConversation = getGenieConversation(store, targetNodeId) || { messages: [] };
-            const systemMessage = {
-              role: "system" as const,
-              content: input.message,
-            };
-            const updatedMessages: GenieOutput["messages"] = [...currentConversation.messages, systemMessage];
-
-            setGenieConversation(store, targetNodeId, { messages: updatedMessages });
-            setGenieBackstoryUpdate(store, targetNodeId, true);
-
-            // Immediately trigger genie to respond to the system message
-            selfInference(targetNodeId, input.message);
+            addSystemMessage(targetNodeId, input.message);
           }
         }
       }
@@ -285,12 +309,13 @@ export function useGenieState(): GenieStateActions {
         }
       }
     },
-    [store, selfInference]
+    [store, selfInference, addSystemMessage]
   );
 
   return {
     selfInference,
     saveBackstory,
     processBackstoryUpdates,
+    addSystemMessage,
   };
 }

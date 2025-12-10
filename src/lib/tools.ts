@@ -9,6 +9,7 @@ import type {
   PixelArtDisplayConfig,
   WebhookTriggerConfig,
   SurveyConfig,
+  GenieConfig,
 } from "@/types/pipeline";
 import { ICON_IDS } from "@/types/pipeline";
 
@@ -235,6 +236,36 @@ function getCustomName(node: PipelineNodeConfig): string | undefined {
 }
 
 /**
+ * Generate a tool for sending messages to a genie node
+ */
+export function getGenieTool(node: PipelineNodeConfig): Tool | null {
+  if (node.type !== "genie") return null;
+
+  const genieConfig = node.config as GenieConfig;
+  const genieName = genieConfig.name || "genie";
+  
+  // Generate tool name: send_message_to_genie or send_message_to_{genie_name}
+  const toolName = genieName === "genie" 
+    ? "send_message_to_genie"
+    : `send_message_to_${genieName}`;
+
+  return {
+    name: toolName,
+    description: `Send a message to the genie "${genieName}". The genie will receive this message and respond to it.`,
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        message: {
+          type: "string",
+          description: `The message to send to ${genieName}. This will be added to the genie's conversation with role "system".`,
+        },
+      },
+      required: ["message"],
+    },
+  };
+}
+
+/**
  * Generate a tool name from base name and optional custom name
  * e.g., "display_icon" + "weather" → "display_weather_icon"
  */
@@ -280,8 +311,16 @@ export function getToolForNode(node: PipelineNodeConfig): Tool | null {
 /**
  * Parse a tool name to extract the output type and custom name
  * e.g., "display_weather_icon" → { outputType: "icon", customName: "weather" }
+ * Also handles genie message tools: "send_message_to_genie" or "send_message_to_{name}"
  */
 export function parseToolName(toolName: string): { outputType: OutputType; customName?: string } | null {
+  // Check if it's a genie message tool
+  if (toolName === "send_message_to_genie" || toolName.startsWith("send_message_to_")) {
+    // For genie tools, we don't return an output type since they're handled separately
+    // This function is used for output nodes, so we return null for genie tools
+    return null;
+  }
+
   // Try each template to find a match
   for (const [outputType, template] of Object.entries(TOOL_TEMPLATES)) {
     const baseName = template.baseToolName;
@@ -328,10 +367,18 @@ export function getToolsFromPrecedingNodes(
     // Stop at previous inference node
     if (node.type === "inference") break;
 
+    // Get tool for output nodes
     const tool = getToolForNode(node);
     if (tool) {
       tools.push(tool);
       nodeIdByToolName[tool.name] = node.id;
+    }
+
+    // Get tool for genie nodes
+    const genieTool = getGenieTool(node);
+    if (genieTool) {
+      tools.push(genieTool);
+      nodeIdByToolName[genieTool.name] = node.id;
     }
   }
 
@@ -353,6 +400,13 @@ export function nodeTypeToOutputType(nodeType: NodeType): OutputType | null {
  */
 export function isOutputNode(nodeType: NodeType): boolean {
   return nodeType in NODE_TYPE_TO_OUTPUT_TYPE;
+}
+
+/**
+ * Check if a tool name is a genie message tool
+ */
+export function isGenieMessageTool(toolName: string): boolean {
+  return toolName === "send_message_to_genie" || toolName.startsWith("send_message_to_");
 }
 
 // Legacy export for backward compatibility

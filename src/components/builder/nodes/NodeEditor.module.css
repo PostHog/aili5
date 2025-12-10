@@ -667,6 +667,30 @@
   border: 1px solid color-mix(in srgb, var(--foreground) 15%, transparent);
 }
 
+.genieMessageSystem {
+  align-items: flex-start;
+}
+
+.genieMessageSystem .genieMessageLabel {
+  color: #a855f7;
+}
+
+.genieMessageSystem .genieMessageContent {
+  background: color-mix(in srgb, #a855f7 10%, transparent);
+  border: 1px solid color-mix(in srgb, #a855f7 25%, transparent);
+  font-style: italic;
+}
+
+.genieMessageThinking {
+  align-items: flex-start;
+}
+
+.genieMessageThinking .loadingOutput {
+  color: color-mix(in srgb, var(--foreground) 60%, transparent);
+  font-style: italic;
+  padding: 0.5rem 0;
+}
+
 .genieInputContainer {
   display: flex;
   flex-direction: column;

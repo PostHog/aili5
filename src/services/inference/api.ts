@@ -4,6 +4,7 @@ export interface InferenceParams {
   model: string;
   temperature: number;
   tools?: unknown[];
+  toolChoice?: "auto" | "any" | { type: "tool"; name: string };
 }
 
 export interface InferenceResult {
@@ -25,6 +26,7 @@ export async function runInference(params: InferenceParams): Promise<InferenceRe
       model: params.model,
       temperature: params.temperature,
       tools: params.tools,
+      toolChoice: params.toolChoice,
     }),
   });
 

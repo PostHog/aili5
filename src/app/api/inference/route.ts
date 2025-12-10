@@ -14,6 +14,7 @@ interface InferenceRequest {
   model: string;
   temperature: number;
   tools?: Tool[];
+  toolChoice?: "auto" | "any" | { type: "tool"; name: string };
 }
 
 interface InferenceResponse {
@@ -25,7 +26,7 @@ interface InferenceResponse {
 export async function POST(request: NextRequest): Promise<NextResponse<InferenceResponse>> {
   try {
     const body: InferenceRequest = await request.json();
-    const { systemPrompt, userMessage, model, temperature, tools } = body;
+    const { systemPrompt, userMessage, model, temperature, tools, toolChoice } = body;
 
     if (!userMessage?.trim()) {
       return NextResponse.json(
@@ -67,6 +68,12 @@ export async function POST(request: NextRequest): Promise<NextResponse<Inference
     // Add tools if provided
     if (tools && tools.length > 0) {
       requestOptions.tools = tools;
+      // Use tool_choice if provided, default to "any" to encourage tool use
+      if (toolChoice) {
+        requestOptions.tool_choice = toolChoice as Anthropic.ToolChoice;
+      } else {
+        requestOptions.tool_choice = { type: "any" } as Anthropic.ToolChoice;
+      }
     }
 
     const message = await client.messages.create(requestOptions) as Anthropic.Message;

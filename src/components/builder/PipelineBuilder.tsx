@@ -2,8 +2,8 @@
 
 import { useCallback } from "react";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
-import type { PipelineNodeConfig, InferenceConfig, TextOutput, GenieOutput } from "@/types/pipeline";
-import { getToolsForDownstreamNodes } from "@/lib/tools";
+import type { PipelineNodeConfig, InferenceConfig, TextOutput, GenieOutput, GenieConfig } from "@/types/pipeline";
+import { getToolsForDownstreamNodes, isGenieMessageTool } from "@/lib/tools";
 import { usePipelineDragDrop } from "@/hooks/usePipelineDragDrop";
 import { useGenieState } from "@/hooks/useGenieState";
 import { useURLLoader } from "@/hooks/useURLLoader";
@@ -12,6 +12,8 @@ import { routeToolCalls } from "@/services/inference/toolRouter";
 import { runInference } from "@/services/inference/api";
 import { usePipelineStore } from "@/store/pipelineStore";
 import { getGenieConversation, getGenieBackstoryUpdate } from "@/hooks/useGenieState";
+import { parseBlockOutput } from "@/lib/blockParsers";
+import type { GenieUpdate } from "@/components/builder/nodes/GenieNodeEditor";
 import { ModulePalette, MODULE_DEFINITIONS, SYSTEM_PROMPT_MODULE } from "./ModulePalette";
 import { PipelineCanvas } from "./PipelineCanvas";
 import styles from "./PipelineBuilder.module.css";
@@ -74,7 +76,7 @@ export function PipelineBuilder() {
       const inferenceConfig = inferenceNode.config as InferenceConfig;
 
       // Get user input from the inference node itself
-      const userMessage = store.userInputs[inferenceNodeId] || "";
+      let userMessage = store.userInputs[inferenceNodeId] || "";
       if (!userMessage.trim()) {
         console.error("No user input provided");
         return;
@@ -86,8 +88,21 @@ export function PipelineBuilder() {
       // Get tools for preceding output nodes (use fullNodes with correct index)
       const { tools, nodeIdByToolName } = getToolsForDownstreamNodes(fullNodes, nodeIndex);
 
-      // Filter out genie update tools from being passed to the LLM as regular output tools
-      const filteredTools = tools.filter((tool) => !tool.name.startsWith("update_genie_"));
+      // Filter out genie update tools (but keep genie message tools - LLM needs them to send messages to genies)
+      // Put genie message tools FIRST to prioritize them
+      const nonGenieTools = tools.filter(
+        (tool) => !tool.name.startsWith("update_genie_") && !isGenieMessageTool(tool.name)
+      );
+      const genieMessageTools = tools.filter(
+        (tool) => isGenieMessageTool(tool.name)
+      );
+      const filteredTools = [...genieMessageTools, ...nonGenieTools];
+
+      // If genie tools are available and user mentions genie, add a reminder to the user message
+      const genieToolNamesForUser = filteredTools.filter(t => isGenieMessageTool(t.name)).map(t => t.name);
+      if (genieToolNamesForUser.length > 0 && (userMessage.toLowerCase().includes('genie') || userMessage.toLowerCase().includes('bobskin') || userMessage.toLowerCase().includes('send') || userMessage.toLowerCase().includes('message'))) {
+        userMessage += `\n\nRemember: If you want to send a message to a genie, you MUST call the ${genieToolNamesForUser.join(" or ")} tool. Do not just say you will send a message - actually call the tool.`;
+      }
 
       // Get genie conversations
       const genieConversations: Record<string, GenieOutput> = {};
@@ -99,7 +114,7 @@ export function PipelineBuilder() {
       });
 
       // Build system prompt from preceding nodes
-      const systemPrompt =
+      let systemPrompt =
         buildSystemPrompt(
           store.systemPromptConfig.prompt,
           precedingNodes,
@@ -109,16 +124,29 @@ export function PipelineBuilder() {
           { includeGenieConversations: true }
         ) || "You are a helpful assistant.";
 
-      // Debug logging
-      console.log("=== Inference Debug ===");
-      console.log("System prompt length:", systemPrompt.length);
-      console.log("Tools count:", filteredTools.length);
-      console.log("Tools:", JSON.stringify(filteredTools, null, 2));
-      console.log("nodeIdByToolName:", nodeIdByToolName);
-      console.log(
-        "Preceding nodes:",
-        precedingNodes.map((n) => ({ id: n.id, type: n.type }))
-      );
+      // Add explicit instruction about using tools if genie tools are available
+      const genieToolNames = filteredTools.filter(t => isGenieMessageTool(t.name)).map(t => t.name);
+      if (genieToolNames.length > 0) {
+        systemPrompt += `\n\n${"#".repeat(60)}
+# MANDATORY TOOL USAGE INSTRUCTIONS
+${"#".repeat(60)}
+
+You MUST call the ${genieToolNames.join(", ")} tool(s) to send messages to genies.
+
+CRITICAL RULES:
+1. If you mention sending a message to a genie, you MUST call the tool
+2. Saying "I'll send a message" without calling the tool is a FAILURE
+3. You MUST call ALL relevant tools, not just one
+4. The genie message tool is the HIGHEST PRIORITY tool
+
+WHEN RESPONDING:
+- Call ${genieToolNames[0]} tool FIRST before any other tools
+- Include your message to the genie in the "message" parameter
+- THEN call other tools like display_color or display_icon
+
+DO NOT skip the genie tool. DO NOT just use other tools without also using the genie tool.
+${"#".repeat(60)}`;
+      }
 
       store.setLoadingNodeId(inferenceNodeId);
 
@@ -131,11 +159,6 @@ export function PipelineBuilder() {
           tools: filteredTools.length > 0 ? filteredTools : undefined,
         });
 
-        console.log("=== Inference Result ===");
-        console.log("result.response:", result.response);
-        console.log("result.toolCalls:", result.toolCalls);
-        console.log("result.error:", result.error);
-
         if (result.error) {
           console.error("Inference error:", result.error);
           return;
@@ -146,29 +169,48 @@ export function PipelineBuilder() {
           store.setOutput(inferenceNodeId, { content: result.response } as TextOutput);
         }
 
-        // Process genie updates from tool calls (before routing other tool calls)
+        // Process genie updates from tool calls (handles both backstory updates AND messages)
+        // This will call addSystemMessage for genie message tools, which triggers selfInference
         genie.processBackstoryUpdates(precedingNodes, result, nodeIdByToolName);
 
-        // Route tool call results to their target output nodes (excluding genie updates)
+        // Also check for legacy backstory updates using parseBlockOutput
+        const inferenceResponse = {
+          response: result.response || "",
+          toolCalls: result.toolCalls || [],
+          error: result.error,
+        };
+
+        for (const node of precedingNodes) {
+          if (node.type === "genie") {
+            const genieUpdate = parseBlockOutput<GenieUpdate>("genie", inferenceResponse, node.id);
+            if (genieUpdate?.backstory) {
+              // Handle backstory update (legacy support)
+              const genieConfig = node.config as GenieConfig;
+              store.setNodes((prev) =>
+                prev.map((n) =>
+                  n.id === node.id
+                    ? { ...n, config: { ...genieConfig, backstory: genieUpdate.backstory! } }
+                    : n
+                )
+              );
+              genie.processBackstoryUpdates([node], result, nodeIdByToolName);
+            }
+          }
+        }
+
+        // Route tool call results to their target output nodes (excluding genie updates and genie messages)
         if (result.toolCalls && result.toolCalls.length > 0) {
-          // Filter out genie update tool calls
+          // Filter out genie update tool calls and genie message tool calls
           const nonGenieToolCalls = result.toolCalls.filter(
-            (tc) => !tc.toolName.startsWith("update_genie_")
+            (tc) => !tc.toolName.startsWith("update_genie_") && !isGenieMessageTool(tc.toolName)
           );
 
           if (nonGenieToolCalls.length > 0) {
-            console.log("Routing tool calls...");
             const outputs = routeToolCalls(nonGenieToolCalls, nodeIdByToolName);
-            console.log("Routed outputs:", outputs);
             Object.entries(outputs).forEach(([id, output]) => {
-              console.log(`Setting output for node ${id}:`, output);
               store.setOutput(id, output);
             });
-          } else {
-            console.log("No non-genie tool calls received");
           }
-        } else {
-          console.log("No tool calls received");
         }
       } catch (error) {
         console.error("Failed to run inference:", error);

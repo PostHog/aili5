@@ -8,34 +8,67 @@ import { AVAILABLE_MODELS } from "@/types/pipeline";
 import styles from "./NodeEditor.module.css";
 
 /**
- * Genie backstory update parsed from inference response
+ * Genie update parsed from inference response
+ * Can contain either a backstory update or a message to send to the genie
  */
-export interface GenieBackstoryUpdate {
+export interface GenieUpdate {
   backstory?: string;
   shouldAutoRespond?: boolean;
+  message?: string;
 }
 
 /**
  * Genie Node Interface
  * Implements NodeInterface for genie blocks
- * Note: The parse method returns GenieBackstoryUpdate (not GenieOutput)
- * because it parses backstory updates from the main inference response
+ * The parse method extracts messages from tool calls or backstory updates from text
  */
-export const GenieNodeInterface: NodeInterface<GenieConfig, GenieBackstoryUpdate> = {
+export const GenieNodeInterface: NodeInterface<GenieConfig, GenieUpdate> = {
   /**
    * Generate block metadata string for system prompt
-   * Formats the genie's conversation history as context
+   * Tells the LLM about the genie and how to send messages to it
    */
   meta: (config: GenieConfig, blockId: string): string => {
-    // This will be called with the actual conversation history from state
-    // For now, return a placeholder - the actual formatting happens in PipelineBuilder
-    return "";
+    const genieName = config.name || "genie";
+    const toolName = genieName === "genie" 
+      ? "send_message_to_genie"
+      : `send_message_to_${genieName}`;
+
+    return `\n\nAvailable output block:
+- "${genieName}": ${blockId}, tool: ${toolName}
+
+To send a message to ${genieName}, you MUST call the ${toolName} tool with:
+- message: A valid message string to send to ${genieName}. This will be added to ${genieName}'s conversation with role "system", and ${genieName} will automatically respond to it.
+
+CRITICAL: If you want to communicate with ${genieName}, you MUST use the ${toolName} tool. Simply mentioning ${genieName} in your text response is NOT sufficient - you must make a tool call.
+
+${genieName}'s backstory: ${config.backstory || "No backstory set"}`;
   },
 
   /**
-   * Parse backstory update from inference response
+   * Parse genie update from inference response
+   * Looks for:
+   * 1. Tool calls with genie message tools (send_message_to_genie or send_message_to_{name})
+   * 2. Text pattern for backstory updates (legacy support)
    */
-  parse: (response: InferenceResponse, blockId: string): { backstory?: string; shouldAutoRespond?: boolean } | undefined => {
+  parse: (response: InferenceResponse, blockId: string): GenieUpdate | undefined => {
+    // First, check for tool calls with genie message tools
+    if (response.toolCalls && response.toolCalls.length > 0) {
+      for (const toolCall of response.toolCalls) {
+        const toolName = toolCall.toolName;
+        
+        // Check if this is a genie message tool
+        if (toolName === "send_message_to_genie" || toolName.startsWith("send_message_to_")) {
+          const input = toolCall.input as { message?: string };
+          if (input.message) {
+            return {
+              message: input.message,
+            };
+          }
+        }
+      }
+    }
+
+    // Fallback: check text response for legacy backstory update pattern
     const text = response.response || "";
     const updatePattern = /UPDATE_GENIE_BACKSTORY:\s*(.+?)(?:\n|$)/i;
     const match = text.match(updatePattern);
@@ -199,20 +232,6 @@ export function GenieNodeEditor({
         </div>
       </div>
 
-      <div className={styles.field}>
-        <label className={styles.checkboxLabel}>
-          <input
-            type="checkbox"
-            checked={config.autoRespondOnUpdate || false}
-            onChange={(e) =>
-              onChange({ ...config, autoRespondOnUpdate: e.target.checked })
-            }
-            disabled={loading}
-          />
-          Auto-respond when backstory is updated
-        </label>
-      </div>
-
       <div className={styles.genieChatContainer} ref={chatContainerRef}>
         <div className={styles.genieMessages}>
           {messages.length === 0 ? (
@@ -248,11 +267,10 @@ export function GenieNodeEditor({
             })
           )}
           {loading && (
-            <div className={styles.genieMessage}>
-              <div className={styles.genieMessageLabel}>{config.name}:</div>
+            <div className={`${styles.genieMessage} ${styles.genieMessageThinking}`}>
               <div className={styles.loadingOutput}>
                 <span className={styles.spinner} />
-                Thinking...
+                {config.name} is thinking...
               </div>
             </div>
           )}
