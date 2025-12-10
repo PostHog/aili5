@@ -31,7 +31,6 @@ interface PipelineCanvasProps {
   onLoadURL: (nodeId: string, url: string, label?: string) => void;
   loadingNodeId: string | null;
   loadingUrlNodeIds: Set<string>;
-  outputs: Record<string, unknown>;
   urlContexts: Record<string, URLContextItem>;
   activeNodeId: string | null;
   overNodeId: string | null;
@@ -226,7 +225,6 @@ export function PipelineCanvas({
   onLoadURL,
   loadingNodeId,
   loadingUrlNodeIds,
-  outputs,
   urlContexts,
   activeNodeId,
   overNodeId,
@@ -291,7 +289,7 @@ export function PipelineCanvas({
                 onLoadURL={onLoadURL}
                 isLoading={loadingNodeId === node.id}
                 isLoadingUrl={loadingUrlNodeIds.has(node.id)}
-                output={outputs[node.id] || null}
+                output={node.output || null}
                 urlContext={urlContexts[node.id] || null}
                 isLast={index === nodes.length - 1}
                 isDropTarget={overNodeId === node.id && activeNodeId !== node.id}

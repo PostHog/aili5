@@ -147,6 +147,24 @@ function gatherContextSections(
         icon: Blocks,
       });
     }
+
+    // Node outputs (for nodes that have generated output)
+    if (node.output) {
+      let outputContent = "";
+      if (typeof node.output === "object") {
+        outputContent = JSON.stringify(node.output, null, 2);
+      } else {
+        outputContent = String(node.output);
+      }
+      sections.push({
+        id: `output-${node.id}`,
+        type: "block_metadata", // Reuse type for now
+        sourceNodeId: node.id,
+        title: `Output: ${node.type.replace("_", " ")}`,
+        content: outputContent,
+        icon: Blocks,
+      });
+    }
   }
 
   // 3. Tool definitions

@@ -200,7 +200,7 @@
 /* Markdown styles */
 .response :global(p),
 .genieMessageContent :global(p) {
-  margin: 0;
+  margin: 0 0 0.25rem 0; /* Half spacing below paragraphs */
 }
 
 .response :global(p:last-child),
@@ -214,7 +214,7 @@
 .genieMessageContent :global(h2),
 .response :global(h3),
 .genieMessageContent :global(h3) {
-  margin: 0.125rem 0 0 0 !important;
+  margin: 0.125rem 0 0.25rem 0 !important; /* Half spacing below headings */
   font-weight: 600;
   line-height: 1.2;
 }
@@ -261,7 +261,7 @@
 
 .response :global(ul),
 .genieMessageContent :global(ul) {
-  margin: 0 !important;
+  margin: 0 0 0.25rem 0 !important; /* Half spacing below lists */
   padding: 0 0 0 1rem !important;
   list-style-position: outside !important;
   line-height: 1.1 !important;
@@ -269,7 +269,7 @@
 
 .response :global(ol),
 .genieMessageContent :global(ol) {
-  margin: 0 !important;
+  margin: 0 0 0.25rem 0 !important; /* Half spacing below lists */
   padding: 0 0 0 1.5rem !important;
   list-style-position: outside !important;
   line-height: 1.1 !important;
@@ -348,6 +348,7 @@
   border-radius: 3px;
   font-family: monospace;
   font-size: 0.8125rem;
+  margin: 0 0.125rem; /* Half spacing around inline code */
 }
 
 .response :global(pre),
@@ -727,4 +728,116 @@
   gap: 0.5rem;
   border-top: 1px solid color-mix(in srgb, var(--foreground) 10%, transparent);
   padding-top: 0.75rem;
+}
+
+/* Emoji display specific styles */
+.emojiContainer {
+  min-height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.emojiDisplay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  text-align: center;
+}
+
+.emojiWrapper {
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--foreground) 8%, transparent);
+}
+
+.emoji {
+  font-size: 3rem;
+  line-height: 1;
+}
+
+.emojiDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.emojiGrid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 200px;
+}
+
+.previewEmoji {
+  font-size: 1.5rem;
+  opacity: 0.3;
+  text-align: center;
+}
+
+/* Pixel art display specific styles */
+.pixelArtContainer {
+  min-height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.pixelArtDisplay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  text-align: center;
+  width: 100%;
+}
+
+.pixelArtCanvasContainer {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: color-mix(in srgb, var(--foreground) 4%, transparent);
+  border-radius: 8px;
+  border: 2px solid color-mix(in srgb, var(--foreground) 15%, transparent);
+}
+
+.pixelArtCanvas {
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  max-width: 100%;
+  height: auto;
+}
+
+.pixelArtGrid {
+  display: grid;
+  gap: 0;
+  border: 2px solid color-mix(in srgb, var(--foreground) 15%, transparent);
+  border-radius: 4px;
+  padding: 2px;
+  background: color-mix(in srgb, var(--foreground) 4%, transparent);
+}
+
+.pixelArtPixel {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.pixelArtPreview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
 }

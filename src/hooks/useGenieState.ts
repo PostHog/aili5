@@ -71,7 +71,7 @@ export function useGenieState(): GenieStateActions {
 
       // Build pipeline context for preceding nodes
       const pipelineContext: PipelineContext = {
-        outputs: store.outputs,
+        nodes: store.nodes, // outputs are now nested in nodes
         genieConversations: {},
         urlContexts: {},
         userInputs: store.userInputs,
@@ -155,7 +155,7 @@ export function useGenieState(): GenieStateActions {
 
       // Build pipeline context for preceding nodes
       const pipelineContext: PipelineContext = {
-        outputs: store.outputs,
+        nodes: store.nodes, // outputs are now nested in nodes
         genieConversations: {},
         urlContexts: {},
         userInputs: store.userInputs,

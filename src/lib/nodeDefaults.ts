@@ -21,10 +21,12 @@ export function getDefaultConfig(type: NodeType): NodeConfigByType[NodeType] {
       return { showHex: true };
     case "icon_display":
       return { size: "md" };
+    case "emoji_display":
+      return {};
     case "gauge_display":
       return { style: "bar", showValue: true };
     case "pixel_art_display":
-      return { pixelSize: 24 };
+      return { pixelSize: 32 };
     case "webhook_trigger":
       return { showResponse: true };
     case "survey":

@@ -1,10 +1,12 @@
 import type { Tool } from "@anthropic-ai/sdk/resources/messages";
+import { z } from "zod";
 import type {
   NodeType,
   OutputType,
   PipelineNodeConfig,
   ColorDisplayConfig,
   IconDisplayConfig,
+  EmojiDisplayConfig,
   GaugeDisplayConfig,
   PixelArtDisplayConfig,
   WebhookTriggerConfig,
@@ -12,6 +14,66 @@ import type {
   GenieConfig,
 } from "@/types/pipeline";
 import { ICON_IDS } from "@/types/pipeline";
+
+// ─────────────────────────────────────────────────────────────────
+// Tool Name Validation
+// ─────────────────────────────────────────────────────────────────
+
+const TOOL_NAME_PATTERN = /^[a-zA-Z0-9_-]{1,128}$/;
+const toolNameSchema = z.string().regex(TOOL_NAME_PATTERN, {
+  message: "Tool name must match pattern: ^[a-zA-Z0-9_-]{1,128}$",
+});
+
+/**
+ * Sanitize a custom name to ensure it's valid for tool names
+ * Pattern: ^[a-zA-Z0-9_-]{1,128}$
+ */
+function sanitizeCustomName(name: string): string {
+  // Replace invalid characters with underscores
+  let sanitized = name.replace(/[^a-zA-Z0-9_-]/g, "_");
+  // Remove consecutive underscores
+  sanitized = sanitized.replace(/_+/g, "_");
+  // Remove leading/trailing underscores
+  sanitized = sanitized.replace(/^_+|_+$/g, "");
+  // Ensure it's not empty (use "custom" as fallback)
+  if (!sanitized) sanitized = "custom";
+  // Truncate to 128 characters
+  if (sanitized.length > 128) sanitized = sanitized.substring(0, 128);
+  return sanitized;
+}
+
+/**
+ * Validate and sanitize a tool name
+ */
+function validateAndSanitizeToolName(toolName: string): string {
+  // First try to validate as-is
+  const result = toolNameSchema.safeParse(toolName);
+  if (result.success) {
+    return toolName;
+  }
+
+  // If invalid, sanitize
+  let sanitized = toolName.replace(/[^a-zA-Z0-9_-]/g, "_");
+  sanitized = sanitized.replace(/_+/g, "_");
+  sanitized = sanitized.replace(/^_+|_+$/g, "");
+  
+  // Ensure it's not empty
+  if (!sanitized) sanitized = "tool";
+  
+  // Truncate to 128 characters
+  if (sanitized.length > 128) {
+    sanitized = sanitized.substring(0, 128);
+  }
+
+  // Validate again after sanitization
+  const finalResult = toolNameSchema.safeParse(sanitized);
+  if (!finalResult.success) {
+    // Fallback to a safe default
+    return "tool";
+  }
+
+  return sanitized;
+}
 
 // ─────────────────────────────────────────────────────────────────
 // Tool Schema Templates (without names - names are generated dynamically)
@@ -73,6 +135,25 @@ const TOOL_TEMPLATES: Partial<Record<OutputType, ToolTemplate>> = {
     },
   },
 
+  emoji: {
+    baseToolName: "display_emoji",
+    description: "Display an emoji to represent a concept, emotion, or status.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        emoji: {
+          type: "string",
+          description: "A single emoji character",
+        },
+        explanation: {
+          type: "string",
+          description: "Why you chose this emoji",
+        },
+      },
+      required: ["emoji"],
+    },
+  },
+
   gauge: {
     baseToolName: "display_gauge",
     description: "Display a numeric value on a gauge or meter.",
@@ -110,32 +191,27 @@ const TOOL_TEMPLATES: Partial<Record<OutputType, ToolTemplate>> = {
 
   pixel_art: {
     baseToolName: "generate_pixel_art",
-    description: "Generate pixel art on a grid.",
+    description: "Generate pixel art on a grid using color codes.",
     input_schema: {
       type: "object" as const,
       properties: {
-        width: {
-          type: "number",
-          description: "Grid width in pixels (default: 8, max: 16)",
+        colors: {
+          type: "object",
+          description: "Color map: keys are single-character codes, values are hex colors or 'transparent'",
         },
-        height: {
-          type: "number",
-          description: "Grid height in pixels (default: 8, max: 16)",
-        },
-        pixels: {
+        grid: {
           type: "array",
           items: {
             type: "string",
-            pattern: "^#[0-9a-fA-F]{6}$",
           },
-          description: "Array of hex colors, length must equal width × height",
+          description: "Array of strings, each string is a row. Characters map to colors object",
         },
         explanation: {
           type: "string",
           description: "Description of what you drew",
         },
       },
-      required: ["pixels"],
+      required: ["colors", "grid"],
     },
   },
 
@@ -215,6 +291,7 @@ const TOOL_TEMPLATES: Partial<Record<OutputType, ToolTemplate>> = {
 const NODE_TYPE_TO_OUTPUT_TYPE: Partial<Record<NodeType, OutputType>> = {
   color_display: "color",
   icon_display: "icon",
+  emoji_display: "emoji",
   gauge_display: "gauge",
   pixel_art_display: "pixel_art",
   webhook_trigger: "webhook",
@@ -228,6 +305,7 @@ function getCustomName(node: PipelineNodeConfig): string | undefined {
   const config = node.config as
     | ColorDisplayConfig
     | IconDisplayConfig
+    | EmojiDisplayConfig
     | GaugeDisplayConfig
     | PixelArtDisplayConfig
     | WebhookTriggerConfig
@@ -244,13 +322,19 @@ export function getGenieTool(node: PipelineNodeConfig): Tool | null {
   const genieConfig = node.config as GenieConfig;
   const genieName = genieConfig.name || "genie";
   
+  // Sanitize genie name
+  const sanitizedGenieName = sanitizeCustomName(genieName);
+  
   // Generate tool name: send_message_to_genie or send_message_to_{genie_name}
-  const toolName = genieName === "genie" 
+  const toolName = sanitizedGenieName === "genie" 
     ? "send_message_to_genie"
-    : `send_message_to_${genieName}`;
+    : `send_message_to_${sanitizedGenieName}`;
+
+  // Validate and sanitize the final tool name
+  const validatedToolName = validateAndSanitizeToolName(toolName);
 
   return {
-    name: toolName,
+    name: validatedToolName,
     description: `Send a message to the genie "${genieName}". The genie will receive this message and respond to it.`,
     input_schema: {
       type: "object" as const,
@@ -268,17 +352,31 @@ export function getGenieTool(node: PipelineNodeConfig): Tool | null {
 /**
  * Generate a tool name from base name and optional custom name
  * e.g., "display_icon" + "weather" → "display_weather_icon"
+ * Validates and sanitizes the final tool name to match pattern: ^[a-zA-Z0-9_-]{1,128}$
  */
 function generateToolName(baseToolName: string, customName?: string): string {
-  if (!customName) return baseToolName;
+  // Validate base tool name first
+  const validatedBase = validateAndSanitizeToolName(baseToolName);
+  
+  if (!customName) {
+    return validatedBase;
+  }
+
+  // Sanitize custom name first
+  const sanitizedCustomName = sanitizeCustomName(customName);
 
   // Insert custom name: "display_icon" → "display_weather_icon"
-  const parts = baseToolName.split("_");
+  const parts = validatedBase.split("_");
+  let toolName: string;
   if (parts.length >= 2) {
     // Insert after first part: display_[custom]_icon
-    return `${parts[0]}_${customName}_${parts.slice(1).join("_")}`;
+    toolName = `${parts[0]}_${sanitizedCustomName}_${parts.slice(1).join("_")}`;
+  } else {
+    toolName = `${validatedBase}_${sanitizedCustomName}`;
   }
-  return `${baseToolName}_${customName}`;
+
+  // Validate and sanitize the final tool name
+  return validateAndSanitizeToolName(toolName);
 }
 
 /**

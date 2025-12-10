@@ -66,7 +66,7 @@ export function PipelineBuilder() {
     });
 
     return {
-      outputs: store.outputs,
+      nodes: store.nodes, // outputs are now nested in nodes
       genieConversations: genieConvos,
       urlContexts: urlLoader.urlContexts,
       userInputs: store.userInputs,
@@ -228,10 +228,11 @@ ${"#".repeat(60)}`;
           );
 
           if (nonGenieToolCalls.length > 0) {
-            const outputs = routeToolCalls(nonGenieToolCalls, nodeIdByToolName);
-            Object.entries(outputs).forEach(([id, output]) => {
+            const outputs = routeToolCalls(nonGenieToolCalls, nodeIdByToolName, fullNodes, inferenceResponse);
+            // Set outputs - they're now nested in nodes, so order is preserved
+            for (const [id, output] of Object.entries(outputs)) {
               store.setOutput(id, output);
-            });
+            }
           }
         }
       } catch (error) {
@@ -319,7 +320,7 @@ ${"#".repeat(60)}`;
           onLoadURL={urlLoader.loadURL}
           loadingNodeId={store.loadingNodeId}
           loadingUrlNodeIds={urlLoader.loadingUrlNodeIds}
-          outputs={store.outputs}
+          // outputs are now nested in nodes
           urlContexts={urlLoader.urlContexts}
           activeNodeId={dragDrop.activeId}
           overNodeId={dragDrop.overId}

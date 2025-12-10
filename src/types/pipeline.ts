@@ -12,6 +12,7 @@ export interface PipelineNodeConfig {
   id: string;
   type: NodeType;
   config: NodeConfigByType[NodeType];
+  output?: OutputDataByType[keyof OutputDataByType] | null;
 }
 
 export type NodeType =
@@ -23,6 +24,7 @@ export type NodeType =
   | "text_display"
   | "color_display"
   | "icon_display"
+  | "emoji_display"
   | "gauge_display"
   | "pixel_art_display"
   | "webhook_trigger"
@@ -84,6 +86,12 @@ export interface IconDisplayConfig {
   size?: "sm" | "md" | "lg";
 }
 
+export interface EmojiDisplayConfig {
+  /** Unique name for this output - becomes the tool name (e.g., "mood" → "display_mood_emoji") */
+  name?: string;
+  label?: string;
+}
+
 export interface GaugeDisplayConfig {
   /** Unique name for this output - becomes the tool name (e.g., "score" → "display_score_gauge") */
   name?: string;
@@ -137,6 +145,7 @@ export interface NodeConfigByType {
   text_display: TextDisplayConfig;
   color_display: ColorDisplayConfig;
   icon_display: IconDisplayConfig;
+  emoji_display: EmojiDisplayConfig;
   gauge_display: GaugeDisplayConfig;
   pixel_art_display: PixelArtDisplayConfig;
   webhook_trigger: WebhookTriggerConfig;
@@ -189,6 +198,7 @@ export type OutputType =
   | "text"
   | "color"
   | "icon"
+  | "emoji"
   | "gauge"
   | "pixel_art"
   | "webhook"
@@ -210,6 +220,11 @@ export interface IconOutput {
   explanation?: string;
 }
 
+export interface EmojiOutput {
+  emoji: string;
+  explanation?: string;
+}
+
 export const ICON_IDS = [
   "check", "x", "warning", "info", "star", "heart", "fire", "sparkles",
   "lightbulb", "moon", "sun", "cloud", "rain", "snow", "wind", "leaf",
@@ -228,9 +243,10 @@ export interface GaugeOutput {
 }
 
 export interface PixelArtOutput {
-  width: number;
-  height: number;
-  pixels: string[];
+  colors: Record<string, string>; // e.g., { transparent: 'transparent', white: '#f0f0f0', ... }
+  grid: string[]; // Array of strings, each string is a row
+  width?: number; // Optional, can be inferred from grid
+  height?: number; // Optional, can be inferred from grid
   explanation?: string;
 }
 
@@ -259,6 +275,7 @@ export interface OutputDataByType {
   text: TextOutput;
   color: ColorOutput;
   icon: IconOutput;
+  emoji: EmojiOutput;
   gauge: GaugeOutput;
   pixel_art: PixelArtOutput;
   webhook: WebhookOutput;

@@ -14,6 +14,7 @@ import {
   Link,
   FileText,
   Sparkles,
+  Smile,
   type LucideIcon,
 } from "lucide-react";
 import type { NodeType } from "@/types/pipeline";
@@ -36,6 +37,7 @@ const COLORS = {
   yellow: "#FBBF24",    // LLM inference - cheerful yellow
   grey: "#6B7280",      // Color output - neutral grey
   purple: "#8B5CF6",    // Icon output - vibrant purple
+  pink: "#EC4899",       // Emoji output - playful pink
   green: "#10B981",     // Gauge output - fresh green
   orange: "#F97316",    // Pixel art - creative orange
   cyan: "#06B6D4",      // Webhook - tech cyan
@@ -92,6 +94,14 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     icon: CircleDot,
     category: "output",
     color: COLORS.purple,
+  },
+  {
+    type: "emoji_display",
+    name: "Emoji",
+    description: "Display an emoji",
+    icon: Smile,
+    category: "output",
+    color: COLORS.pink,
   },
   {
     type: "gauge_display",

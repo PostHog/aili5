@@ -7,6 +7,8 @@ import type {
   InferenceConfig,
   IconDisplayConfig,
   ColorDisplayConfig,
+  EmojiDisplayConfig,
+  PixelArtDisplayConfig,
   URLLoaderConfig,
   TextInputConfig,
   GenieConfig,
@@ -14,12 +16,16 @@ import type {
   TextOutput,
   IconOutput,
   ColorOutput,
+  EmojiOutput,
+  PixelArtOutput,
   GenieOutput,
 } from "@/types/pipeline";
 import { SystemPromptNodeEditor } from "./SystemPromptNodeEditor";
 import { InferenceNodeEditor } from "./InferenceNodeEditor";
 import { IconDisplayNodeEditor } from "./IconDisplayNodeEditor";
 import { ColorDisplayNodeEditor } from "./ColorDisplayNodeEditor";
+import { EmojiDisplayNodeEditor } from "./EmojiDisplayNodeEditor";
+import { PixelArtDisplayNodeEditor } from "./PixelArtDisplayNodeEditor";
 import { URLLoaderNodeEditor } from "./URLLoaderNodeEditor";
 import { TextInputNodeEditor } from "./TextInputNodeEditor";
 import { GenieNodeEditor } from "./GenieNodeEditor";
@@ -104,6 +110,26 @@ export function NodeRenderer({
         />
       );
 
+    case "emoji_display":
+      return (
+        <EmojiDisplayNodeEditor
+          config={node.config as EmojiDisplayConfig}
+          onChange={(config) => onConfigChange(node.id, config)}
+          output={output as EmojiOutput | null}
+          loading={isLoading}
+        />
+      );
+
+    case "pixel_art_display":
+      return (
+        <PixelArtDisplayNodeEditor
+          config={node.config as PixelArtDisplayConfig}
+          onChange={(config) => onConfigChange(node.id, config)}
+          output={output as PixelArtOutput | null}
+          loading={isLoading}
+        />
+      );
+
     case "url_loader":
       return (
         <URLLoaderNodeEditor
@@ -144,7 +170,6 @@ export function NodeRenderer({
 
     // Placeholder for other node types
     case "gauge_display":
-    case "pixel_art_display":
     case "webhook_trigger":
     case "survey":
       return (

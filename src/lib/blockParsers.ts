@@ -2,6 +2,8 @@ import type { NodeInterface, InferenceResponse, NodeRuntimeState } from "@/lib/n
 import type { PipelineNodeConfig, TextInputConfig, URLLoaderConfig, GenieConfig, GenieOutput, URLContextItem, TextOutput } from "@/types/pipeline";
 import { IconDisplayNodeInterface } from "@/components/builder/nodes/IconDisplayNodeEditor";
 import { ColorDisplayNodeInterface } from "@/components/builder/nodes/ColorDisplayNodeEditor";
+import { EmojiDisplayNodeInterface } from "@/components/builder/nodes/EmojiDisplayNodeEditor";
+import { PixelArtDisplayNodeInterface } from "@/components/builder/nodes/PixelArtDisplayNodeEditor";
 import { GenieNodeInterface } from "@/components/builder/nodes/GenieNodeEditor";
 
 /**
@@ -53,6 +55,8 @@ const nodeInterfaces: Record<string, NodeInterface<any, any>> = {
   inference: InferenceNodeInterface,
   icon_display: IconDisplayNodeInterface,
   color_display: ColorDisplayNodeInterface,
+  emoji_display: EmojiDisplayNodeInterface,
+  pixel_art_display: PixelArtDisplayNodeInterface,
   genie: GenieNodeInterface,
 };
 

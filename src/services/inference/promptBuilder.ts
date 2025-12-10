@@ -15,7 +15,7 @@ export interface PromptBuilderOptions {
  * All state needed to build context for nodes
  */
 export interface PipelineContext {
-  outputs: Record<string, OutputData>;
+  nodes: PipelineNodeConfig[]; // outputs are now nested in nodes
   genieConversations: Record<string, GenieOutput>;
   urlContexts: Record<string, URLContextItem>;
   userInputs: Record<string, string>;
@@ -26,12 +26,15 @@ export interface PipelineContext {
  * This returns the runtime state for any node
  */
 export function createNodeStateAccessor(context: PipelineContext): (nodeId: string) => NodeRuntimeState {
-  return (nodeId: string): NodeRuntimeState => ({
-    output: context.outputs[nodeId] ?? undefined,
-    conversation: context.genieConversations[nodeId] ?? undefined,
-    urlContext: context.urlContexts[nodeId] ?? undefined,
-    userInput: context.userInputs[nodeId] ?? undefined,
-  });
+  return (nodeId: string): NodeRuntimeState => {
+    const node = context.nodes.find((n) => n.id === nodeId);
+    return {
+      output: node?.output ?? undefined,
+      conversation: context.genieConversations[nodeId] ?? undefined,
+      urlContext: context.urlContexts[nodeId] ?? undefined,
+      userInput: context.userInputs[nodeId] ?? undefined,
+    };
+  };
 }
 
 /**

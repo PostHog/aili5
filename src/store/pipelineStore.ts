@@ -9,10 +9,12 @@ import type {
   IconOutput,
   ColorOutput,
   GaugeOutput,
+  EmojiOutput,
+  PixelArtOutput,
 } from "@/types/pipeline";
 
-// Output types union
-export type OutputData = TextOutput | IconOutput | ColorOutput | GaugeOutput | null;
+// Output types union (for backward compatibility, but outputs are now nested in nodes)
+export type OutputData = TextOutput | IconOutput | ColorOutput | GaugeOutput | EmojiOutput | PixelArtOutput | null;
 
 // Storage key
 const STORAGE_KEY = "aili5-pipeline-state";
@@ -25,7 +27,6 @@ const DEBOUNCE_MS = 500;
 interface SerializableState {
   systemPromptConfig: SystemPromptConfig;
   nodes: PipelineNodeConfig[];
-  outputs: Record<string, OutputData>;
   userInputs: Record<string, string>;
   // Generic node-specific state (e.g., genie conversations, url contexts, etc.)
   nodeState: Record<string, unknown>;
@@ -48,7 +49,7 @@ interface PipelineActions {
   reorderNodes: (oldIndex: number, newIndex: number) => void;
   setNodes: (nodes: PipelineNodeConfig[] | ((prev: PipelineNodeConfig[]) => PipelineNodeConfig[])) => void;
 
-  // Outputs
+  // Outputs (now nested in nodes)
   setOutput: (nodeId: string, output: OutputData) => void;
 
   // User inputs
@@ -113,7 +114,6 @@ function loadFromStorage(): Partial<SerializableState> | null {
 const initialState: SerializableState = {
   systemPromptConfig: { prompt: "You are a helpful assistant." },
   nodes: [],
-  outputs: {},
   userInputs: {},
   nodeState: {},
 };
@@ -154,8 +154,6 @@ export const usePipelineStore = create<PipelineStore>()(
         const newNodes = state.nodes.filter((n) => n.id !== nodeId);
         const newUserInputs = { ...state.userInputs };
         delete newUserInputs[nodeId];
-        const newOutputs = { ...state.outputs };
-        delete newOutputs[nodeId];
         const newNodeState = { ...state.nodeState };
         // Remove all state for this node
         Object.keys(newNodeState).forEach((k) => {
@@ -167,7 +165,6 @@ export const usePipelineStore = create<PipelineStore>()(
         const newState = {
           nodes: newNodes,
           userInputs: newUserInputs,
-          outputs: newOutputs,
           nodeState: newNodeState,
         };
         saveToStorage({ ...state, ...newState });
@@ -207,9 +204,11 @@ export const usePipelineStore = create<PipelineStore>()(
     // Outputs
     setOutput: (nodeId, output) => {
       set((state) => {
-        const newOutputs = { ...state.outputs, [nodeId]: output };
-        saveToStorage({ ...state, outputs: newOutputs });
-        return { outputs: newOutputs };
+        const newNodes = state.nodes.map((node) =>
+          node.id === nodeId ? { ...node, output } : node
+        );
+        saveToStorage({ ...state, nodes: newNodes });
+        return { nodes: newNodes };
       });
     },
 
@@ -285,8 +284,7 @@ export const usePipelineStore = create<PipelineStore>()(
               const state = get();
               const serializableState: SerializableState = {
                 systemPromptConfig: state.systemPromptConfig,
-                nodes: state.nodes,
-                outputs: state.outputs,
+                nodes: state.nodes, // outputs are now nested in nodes
                 userInputs: state.userInputs,
                 nodeState: state.nodeState,
               };
@@ -296,13 +294,22 @@ export const usePipelineStore = create<PipelineStore>()(
             // Paste pipeline
             pastePipeline: (serializedState: string) => {
               try {
-                const parsed = JSON.parse(serializedState) as Partial<SerializableState>;
+                const parsed = JSON.parse(serializedState) as Partial<SerializableState & { outputs?: Record<string, OutputData> }>;
+                
+                // Migrate old format (outputs object) to new format (nested in nodes)
+                let nodes = parsed.nodes || initialState.nodes;
+                if (parsed.outputs && Object.keys(parsed.outputs).length > 0) {
+                  // Migrate outputs from separate object to nested in nodes
+                  nodes = nodes.map((node) => {
+                    const output = parsed.outputs![node.id];
+                    return output !== undefined ? { ...node, output } : node;
+                  });
+                }
                 
                 // Validate and set the state
                 const newState: SerializableState = {
                   systemPromptConfig: parsed.systemPromptConfig || initialState.systemPromptConfig,
-                  nodes: parsed.nodes || initialState.nodes,
-                  outputs: parsed.outputs || initialState.outputs,
+                  nodes,
                   userInputs: parsed.userInputs || initialState.userInputs,
                   nodeState: parsed.nodeState || initialState.nodeState,
                 };
