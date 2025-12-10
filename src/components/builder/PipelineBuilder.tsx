@@ -9,7 +9,7 @@ import { useGenieState } from "@/hooks/useGenieState";
 import { useURLLoader } from "@/hooks/useURLLoader";
 import { buildSystemPrompt } from "@/services/inference/promptBuilder";
 import { routeToolCalls } from "@/services/inference/toolRouter";
-import { runInference } from "@/services/inference/api";
+import { runInference, type ImageData } from "@/services/inference/api";
 import { usePipelineStore } from "@/store/pipelineStore";
 import { getGenieConversation, getGenieBackstoryUpdate } from "@/hooks/useGenieState";
 import { parseBlockOutput } from "@/lib/blockParsers";
@@ -170,6 +170,23 @@ DO NOT skip the genie tool. DO NOT just use other tools without also using the g
 ${"#".repeat(60)}`;
       }
 
+      // Gather images from paint nodes in the preceding context
+      const images: ImageData[] = [];
+      for (const node of precedingNodes) {
+        if (node.type === "paint") {
+          const imageData = store.userInputs[node.id];
+          if (imageData && imageData.startsWith("data:image/png;base64,")) {
+            // Extract base64 data from data URL
+            const base64Data = imageData.replace("data:image/png;base64,", "");
+            images.push({
+              type: "base64",
+              mediaType: "image/png",
+              data: base64Data,
+            });
+          }
+        }
+      }
+
       store.setLoadingNodeId(inferenceNodeId);
 
       try {
@@ -179,6 +196,7 @@ ${"#".repeat(60)}`;
           model: inferenceConfig.model,
           temperature: inferenceConfig.temperature,
           tools: filteredTools.length > 0 ? filteredTools : undefined,
+          images: images.length > 0 ? images : undefined,
         });
 
         if (result.error) {
