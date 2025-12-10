@@ -1,0 +1,169 @@
+.container {
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  color: color-mix(in srgb, var(--foreground) 60%, transparent);
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid color-mix(in srgb, var(--foreground) 20%, transparent);
+  border-top-color: var(--foreground);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.scoreDisplay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  text-align: center;
+  animation: bounceIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes bounceIn {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.scoreRing {
+  position: relative;
+  width: 120px;
+  height: 120px;
+}
+
+.progressRing {
+  transform: rotate(-90deg);
+  width: 100%;
+  height: 100%;
+}
+
+.progressBg {
+  stroke: color-mix(in srgb, var(--foreground) 10%, transparent);
+}
+
+.progressFill {
+  transition: stroke-dashoffset 1s ease-out, stroke 0.3s ease;
+}
+
+.scoreValue {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.scoreNumber {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.scoreMax {
+  font-size: 0.875rem;
+  font-weight: 500;
+  opacity: 0.6;
+}
+
+.starRating {
+  display: flex;
+  gap: 4px;
+}
+
+.star {
+  width: 20px;
+  height: 20px;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.starFilled {
+  animation: starPop 0.3s ease-out backwards;
+}
+
+.starFilled:nth-child(1) { animation-delay: 0.1s; }
+.starFilled:nth-child(2) { animation-delay: 0.2s; }
+.starFilled:nth-child(3) { animation-delay: 0.3s; }
+.starFilled:nth-child(4) { animation-delay: 0.4s; }
+.starFilled:nth-child(5) { animation-delay: 0.5s; }
+
+@keyframes starPop {
+  0% {
+    transform: scale(0);
+  }
+  50% {
+    transform: scale(1.3);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.starEmpty {
+  color: color-mix(in srgb, var(--foreground) 20%, transparent);
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+}
+
+.scoreLabel {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.explanation {
+  font-size: 0.875rem;
+  color: color-mix(in srgb, var(--foreground) 70%, transparent);
+  margin: 0;
+  max-width: 300px;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  color: color-mix(in srgb, var(--foreground) 50%, transparent);
+  font-style: italic;
+  font-size: 0.875rem;
+}
+
+.trophyIcon {
+  width: 40px;
+  height: 40px;
+  opacity: 0.4;
+}

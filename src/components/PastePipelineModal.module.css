@@ -43,32 +43,47 @@
   gap: 0.5rem;
 }
 
-.cancelButton,
-.pasteButton {
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  border: 1px solid color-mix(in srgb, var(--foreground) 20%, transparent);
-}
-
 .cancelButton {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid color-mix(in srgb, var(--foreground) 20%, transparent);
   background: transparent;
   color: var(--foreground);
 }
 
 .cancelButton:hover {
   background: color-mix(in srgb, var(--foreground) 8%, transparent);
+  border-color: color-mix(in srgb, var(--foreground) 30%, transparent);
+  transform: translateY(-1px);
+}
+
+.cancelButton:active {
+  transform: translateY(0);
 }
 
 .pasteButton {
-  background: color-mix(in srgb, var(--foreground) 8%, transparent);
-  color: var(--foreground);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  background: linear-gradient(135deg, #f59e0b, #f97316);
+  color: white;
+  box-shadow: 0 2px 8px color-mix(in srgb, #f59e0b 30%, transparent);
 }
 
 .pasteButton:hover {
-  background: color-mix(in srgb, var(--foreground) 12%, transparent);
-  border-color: color-mix(in srgb, var(--foreground) 30%, transparent);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px color-mix(in srgb, #f59e0b 40%, transparent);
+}
+
+.pasteButton:active {
+  transform: translateY(0);
 }
 

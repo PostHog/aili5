@@ -3,3 +3,5 @@ export { SystemPromptNode } from "./SystemPromptNode";
 export { ModelAndInferenceNode } from "./ModelAndInferenceNode";
 export { OutputNode } from "./OutputNode";
 export { IconDisplayNode } from "./IconDisplayNode";
+export { ScoreDisplayNode } from "./ScoreDisplayNode";
+export { PassFailDisplayNode } from "./PassFailDisplayNode";

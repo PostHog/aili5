@@ -19,7 +19,7 @@ export const ColorDisplayNodeInterface: NodeInterface<ColorDisplayConfig, ColorO
     return `\n\nAvailable output block:
 - "${label}": ${blockId}, tool: ${toolName}
 
-To display a color, you MUST call the ${toolName} tool with:
+To display a color, you (CRITICAL MANDATORY TOOL CALL) MUST call the ${toolName} tool with:
 - hex: A valid hex color code (e.g., "#FF5733", "#3498DB")
 - name: (optional) A name for the color (e.g., "Sunset Orange", "Ocean Blue")
 - explanation: (optional) Why you chose this color
