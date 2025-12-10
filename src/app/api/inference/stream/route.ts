@@ -1,11 +1,60 @@
 import { NextRequest } from "next/server";
+import { cookies } from "next/headers";
 import Anthropic from "@anthropic-ai/sdk";
+import { AUTH_COOKIE_NAME, OAUTH_CONFIG } from "@/lib/auth/constants";
+import type { StoredAuthData } from "@/lib/auth/oauth";
 
 interface StreamRequest {
   systemPrompt: string;
   userMessage: string;
   model: string;
   temperature: number;
+}
+
+/**
+ * Get authentication credentials from OAuth cookie or environment variables
+ */
+async function getAuthCredentials(): Promise<{
+  apiKey: string;
+  projectId: string;
+  apiUrl: string;
+} | null> {
+  // Try OAuth token first
+  const cookieStore = await cookies();
+  const authCookie = cookieStore.get(AUTH_COOKIE_NAME)?.value;
+
+  if (authCookie) {
+    try {
+      const authData: StoredAuthData = JSON.parse(authCookie);
+
+      // Check if token is expired
+      if (authData.expiresAt > Date.now()) {
+        const config = OAUTH_CONFIG[authData.region];
+        return {
+          apiKey: authData.accessToken,
+          projectId: String(authData.projectId),
+          apiUrl: config.baseUrl,
+        };
+      }
+    } catch {
+      // Invalid cookie, fall through to env vars
+    }
+  }
+
+  // Fall back to environment variables (for local dev or server-side usage)
+  const posthogApiKey = process.env.POSTHOG_API_KEY;
+  const posthogProjectId = process.env.POSTHOG_PROJECT_ID;
+  const posthogApiUrl = process.env.POSTHOG_API_URL || "https://us.posthog.com";
+
+  if (posthogApiKey && posthogProjectId) {
+    return {
+      apiKey: posthogApiKey,
+      projectId: posthogProjectId,
+      apiUrl: posthogApiUrl,
+    };
+  }
+
+  return null;
 }
 
 export async function POST(request: NextRequest) {
@@ -20,24 +69,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const posthogApiKey = process.env.POSTHOG_API_KEY;
-    const posthogProjectId = process.env.POSTHOG_PROJECT_ID;
-    const posthogApiUrl = process.env.POSTHOG_API_URL || "https://us.posthog.com";
+    const credentials = await getAuthCredentials();
 
-    if (!posthogApiKey || !posthogProjectId) {
+    if (!credentials) {
       return new Response(
-        JSON.stringify({ error: "PostHog API credentials not configured" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Not authenticated. Please log in with PostHog." }),
+        { status: 401, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    const gatewayUrl = `${posthogApiUrl}/api/projects/${posthogProjectId}/llm_gateway`;
+    const gatewayUrl = `${credentials.apiUrl}/api/projects/${credentials.projectId}/llm_gateway`;
 
     const client = new Anthropic({
       baseURL: gatewayUrl,
-      apiKey: posthogApiKey,
+      apiKey: credentials.apiKey,
       defaultHeaders: {
-        Authorization: `Bearer ${posthogApiKey}`,
+        Authorization: `Bearer ${credentials.apiKey}`,
       },
     });
 
