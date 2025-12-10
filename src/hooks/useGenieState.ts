@@ -3,7 +3,7 @@ import type { PipelineNodeConfig, GenieConfig, GenieOutput, URLContextItem } fro
 import { runInference, type InferenceResult } from "@/services/inference/api";
 import { parseBlockOutput } from "@/lib/blockParsers";
 import { usePipelineStore, type PipelineStore } from "@/store/pipelineStore";
-import { buildSystemPrompt } from "@/services/inference/promptBuilder";
+import { buildSystemPrompt, type PipelineContext } from "@/services/inference/promptBuilder";
 
 export interface GenieStateActions {
   selfInference: (nodeId: string, userMessage: string, skipAddingUserMessage?: boolean) => Promise<void>;
@@ -69,21 +69,27 @@ export function useGenieState(): GenieStateActions {
         }
       }
 
-      // Get all genie conversations for context
-      const genieConversations: Record<string, GenieOutput> = {};
+      // Build pipeline context for preceding nodes
+      const pipelineContext: PipelineContext = {
+        outputs: store.outputs,
+        genieConversations: {},
+        urlContexts: {},
+        userInputs: store.userInputs,
+      };
+
+      // Gather genie conversations
       store.nodes.forEach((node) => {
         if (node.type === "genie") {
           const conv = getGenieConversation(store, node.id);
-          if (conv) genieConversations[node.id] = conv;
+          if (conv) pipelineContext.genieConversations[node.id] = conv;
         }
       });
 
-      // Get URL contexts
-      const urlContexts: Record<string, URLContextItem> = {};
+      // Gather URL contexts
       store.nodes.forEach((node) => {
         if (node.type === "url_loader") {
           const context = store.getNodeState(node.id, "url:context") as URLContextItem | undefined;
-          if (context) urlContexts[node.id] = context;
+          if (context) pipelineContext.urlContexts[node.id] = context;
         }
       });
 
@@ -91,10 +97,8 @@ export function useGenieState(): GenieStateActions {
       const systemPrompt = buildSystemPrompt(
         store.systemPromptConfig.prompt,
         store.nodes.slice(0, genieNodeIndex),
-        genieConversations,
-        urlContexts,
-        store.userInputs,
-        { additionalPrompt: genieIdentityPrompt, includeGenieConversations: true }
+        pipelineContext,
+        { additionalPrompt: genieIdentityPrompt }
       );
 
       store.setLoadingNodeId(nodeId);
@@ -149,21 +153,27 @@ export function useGenieState(): GenieStateActions {
       // Build genie's identity prompt with introduction request
       const genieIdentityPrompt = `You are ${genieConfig.name}. Act as ${genieConfig.name} would act. ${genieConfig.backstory}. Introduce yourself.`;
 
-      // Get all genie conversations for context
-      const genieConversations: Record<string, GenieOutput> = {};
+      // Build pipeline context for preceding nodes
+      const pipelineContext: PipelineContext = {
+        outputs: store.outputs,
+        genieConversations: {},
+        urlContexts: {},
+        userInputs: store.userInputs,
+      };
+
+      // Gather genie conversations
       store.nodes.forEach((node) => {
         if (node.type === "genie") {
           const conv = getGenieConversation(store, node.id);
-          if (conv) genieConversations[node.id] = conv;
+          if (conv) pipelineContext.genieConversations[node.id] = conv;
         }
       });
 
-      // Get URL contexts
-      const urlContexts: Record<string, URLContextItem> = {};
+      // Gather URL contexts
       store.nodes.forEach((node) => {
         if (node.type === "url_loader") {
           const context = store.getNodeState(node.id, "url:context") as URLContextItem | undefined;
-          if (context) urlContexts[node.id] = context;
+          if (context) pipelineContext.urlContexts[node.id] = context;
         }
       });
 
@@ -171,10 +181,8 @@ export function useGenieState(): GenieStateActions {
       const systemPrompt = buildSystemPrompt(
         store.systemPromptConfig.prompt,
         store.nodes.slice(0, genieNodeIndex),
-        genieConversations,
-        urlContexts,
-        store.userInputs,
-        { additionalPrompt: genieIdentityPrompt, includeGenieConversations: true }
+        pipelineContext,
+        { additionalPrompt: genieIdentityPrompt }
       );
 
       store.setLoadingNodeId(nodeId);

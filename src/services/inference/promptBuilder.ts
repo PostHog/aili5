@@ -2,92 +2,58 @@ import type {
   PipelineNodeConfig,
   GenieOutput,
   URLContextItem,
-  TextInputConfig,
-  GenieConfig,
 } from "@/types/pipeline";
-import { generateBlockMetadata } from "@/lib/blockParsers";
+import type { NodeRuntimeState } from "@/lib/nodeInterface";
+import type { OutputData } from "@/store/pipelineStore";
+import { gatherPrecedingContext } from "@/lib/blockParsers";
 
 export interface PromptBuilderOptions {
   additionalPrompt?: string;
-  includeGenieConversations?: boolean;
 }
 
 /**
- * Format genie conversation as context string
+ * All state needed to build context for nodes
  */
-export function formatGenieContext(
-  genieName: string,
-  backstory: string,
-  messages: GenieOutput["messages"]
-): string {
-  let context = `\n\n${"=".repeat(60)}\n`;
-  context += `GENIE CONVERSATION CONTEXT\n`;
-  context += `${"=".repeat(60)}\n`;
-  context += `Genie Name: ${genieName}\n`;
-  context += `Backstory: ${backstory}\n`;
-  context += `\n--- Conversation History ---\n`;
-  for (const msg of messages) {
-    if (msg.role === "user") {
-      context += `User: ${msg.content}\n`;
-    } else if (msg.role === "system") {
-      context += `[System Message]: ${msg.content}\n`;
-    } else {
-      context += `${genieName}: ${msg.content}\n`;
-    }
-  }
-  context += `${"=".repeat(60)}\n`;
-  context += `END OF GENIE CONVERSATION CONTEXT\n`;
-  context += `${"=".repeat(60)}\n\n`;
-  return context;
+export interface PipelineContext {
+  outputs: Record<string, OutputData>;
+  genieConversations: Record<string, GenieOutput>;
+  urlContexts: Record<string, URLContextItem>;
+  userInputs: Record<string, string>;
 }
 
 /**
- * Gather URL context items from preceding nodes
+ * Create a node state accessor from pipeline context
+ * This returns the runtime state for any node
  */
-export function gatherURLContext(
-  precedingNodes: PipelineNodeConfig[],
-  urlContexts: Record<string, URLContextItem>
-): URLContextItem[] {
-  return precedingNodes
-    .filter((node) => node.type === "url_loader")
-    .map((node) => urlContexts[node.id])
-    .filter((ctx): ctx is URLContextItem => ctx?.content !== undefined && !ctx.error);
-}
-
-/**
- * Gather text input content from preceding nodes
- */
-export function gatherTextInputs(
-  precedingNodes: PipelineNodeConfig[],
-  userInputs: Record<string, string>
-): Array<{ label: string; content: string }> {
-  return precedingNodes
-    .filter((node) => node.type === "text_input")
-    .map((node) => {
-      const content = userInputs[node.id];
-      if (!content?.trim()) return null;
-      const config = node.config as TextInputConfig;
-      return { label: config.label || "Text", content: content.trim() };
-    })
-    .filter((item): item is { label: string; content: string } => item !== null);
+export function createNodeStateAccessor(context: PipelineContext): (nodeId: string) => NodeRuntimeState {
+  return (nodeId: string): NodeRuntimeState => ({
+    output: context.outputs[nodeId] ?? undefined,
+    conversation: context.genieConversations[nodeId] ?? undefined,
+    urlContext: context.urlContexts[nodeId] ?? undefined,
+    userInput: context.userInputs[nodeId] ?? undefined,
+  });
 }
 
 /**
  * Build system prompt from base prompt and preceding nodes
+ * Uses the unified context system - each node type defines its own context contribution
+ * 
+ * @param basePrompt - The base system prompt
+ * @param precedingNodes - Nodes before the target inference/genie node
+ * @param context - Pipeline context containing all node states
+ * @param options - Additional options like extra prompts
  */
 export function buildSystemPrompt(
   basePrompt: string,
   precedingNodes: PipelineNodeConfig[],
-  genieConversations: Record<string, GenieOutput>,
-  urlContexts: Record<string, URLContextItem>,
-  userInputs: Record<string, string>,
+  context: PipelineContext,
   options: PromptBuilderOptions = {}
 ): string {
-  const { additionalPrompt, includeGenieConversations = true } = options;
+  const { additionalPrompt } = options;
 
   let systemPrompt = basePrompt;
 
-  // Add additional prompt if provided
+  // Add additional prompt if provided (e.g., genie identity prompt)
   if (additionalPrompt) {
     if (systemPrompt) {
       systemPrompt += "\n\n";
@@ -95,91 +61,28 @@ export function buildSystemPrompt(
     systemPrompt += additionalPrompt;
   }
 
-  // Add context from preceding nodes
-  if (includeGenieConversations) {
-    // First, add all non-genie node metadata
-    for (const node of precedingNodes) {
-      if (node.type !== "genie") {
-        // Add block metadata for other node types
-        const metadata = generateBlockMetadata(node.type, node.config, node.id);
-        if (metadata) {
-          systemPrompt += metadata;
-        }
-      }
-    }
-
-    // Then, add genie tool metadata and conversations (clearly separated)
-    for (const node of precedingNodes) {
-      if (node.type === "genie") {
-        const genieConfig = node.config as GenieConfig;
-        // Add genie tool metadata (tells LLM about the tool)
-        const genieMetadata = generateBlockMetadata(node.type, node.config, node.id);
-        if (genieMetadata) {
-          systemPrompt += genieMetadata;
-        }
-        // Add genie conversation context if it exists (clearly separated)
-        const conversation = genieConversations[node.id];
-        if (conversation && conversation.messages.length > 0) {
-          const genieContext = formatGenieContext(
-            genieConfig.name,
-            genieConfig.backstory,
-            conversation.messages
-          );
-          systemPrompt += genieContext;
-        }
-      }
-    }
-  }
-
-  // Append URL context
-  const urlItems = gatherURLContext(precedingNodes, urlContexts);
-  if (urlItems.length > 0) {
-    systemPrompt += "\n\n## Reference Content\n";
-    systemPrompt += "The following content has been loaded for context:\n\n";
-    for (const item of urlItems) {
-      const label = item.label || item.url;
-      systemPrompt += `### ${label}\n`;
-      systemPrompt += `Source: ${item.url}\n\n`;
-      systemPrompt += item.content;
-      systemPrompt += "\n\n---\n\n";
-    }
-  }
-
-  // Append text inputs
-  const textItems = gatherTextInputs(precedingNodes, userInputs);
-  if (textItems.length > 0) {
-    systemPrompt += "\n\n## Additional Context\n";
-    systemPrompt += "The following text has been provided for context:\n\n";
-    for (const item of textItems) {
-      systemPrompt += `### ${item.label}\n`;
-      systemPrompt += item.content;
-      systemPrompt += "\n\n---\n\n";
-    }
+  // Gather context from all preceding nodes using the unified system
+  const nodeStateAccessor = createNodeStateAccessor(context);
+  const precedingContext = gatherPrecedingContext(precedingNodes, nodeStateAccessor);
+  
+  if (precedingContext) {
+    systemPrompt += precedingContext;
   }
 
   return systemPrompt;
 }
 
 /**
- * Build system prompt from preceding nodes up to a specific index
- * This is a convenience wrapper that slices nodes and calls buildSystemPrompt
+ * Build system prompt from nodes up to a specific index
+ * Convenience wrapper for common use case
  */
 export function buildSystemPromptFromPrecedingNodes(
   basePrompt: string,
   nodes: PipelineNodeConfig[],
   nodeIndex: number,
-  genieConversations: Record<string, GenieOutput>,
-  urlContexts: Record<string, URLContextItem>,
-  userInputs: Record<string, string>,
+  context: PipelineContext,
   options: PromptBuilderOptions = {}
 ): string {
   const precedingNodes = nodes.slice(0, nodeIndex);
-  return buildSystemPrompt(
-    basePrompt,
-    precedingNodes,
-    genieConversations,
-    urlContexts,
-    userInputs,
-    options
-  );
+  return buildSystemPrompt(basePrompt, precedingNodes, context, options);
 }

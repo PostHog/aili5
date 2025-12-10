@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import { Eye } from "lucide-react";
 import type { GenieConfig, GenieOutput } from "@/types/pipeline";
-import type { NodeInterface, InferenceResponse } from "@/lib/nodeInterface";
+import type { NodeInterface, InferenceResponse, NodeRuntimeState } from "@/lib/nodeInterface";
 import { AVAILABLE_MODELS } from "@/types/pipeline";
 import styles from "./NodeEditor.module.css";
 
@@ -82,6 +82,35 @@ ${genieName}'s backstory: ${config.backstory || "No backstory set"}`;
     }
     
     return undefined;
+  },
+
+  /**
+   * Generate context from genie's conversation for downstream nodes
+   */
+  context: (config: GenieConfig, _blockId: string, state: NodeRuntimeState): string | null => {
+    const conversation = state.conversation as GenieOutput | undefined;
+    const genieName = config.name || "genie";
+
+    let context = `\n\n${"=".repeat(50)}`;
+    context += `\nGENIE: ${genieName}`;
+    context += `\nBackstory: ${config.backstory || "No backstory"}`;
+    
+    if (conversation && conversation.messages.length > 0) {
+      context += `\n${"─".repeat(50)}`;
+      context += `\nConversation History:`;
+      for (const msg of conversation.messages) {
+        if (msg.role === "user") {
+          context += `\nUser: ${msg.content}`;
+        } else if (msg.role === "system") {
+          context += `\n[System]: ${msg.content}`;
+        } else {
+          context += `\n${genieName}: ${msg.content}`;
+        }
+      }
+    }
+    context += `\n${"=".repeat(50)}\n`;
+    
+    return context;
   },
 };
 

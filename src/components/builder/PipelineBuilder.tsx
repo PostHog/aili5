@@ -55,30 +55,38 @@ export function PipelineBuilder() {
     setHighlightedNodeId(null);
   }, []);
 
+  // Helper to build pipeline context from current state
+  const buildPipelineContext = useCallback(() => {
+    const genieConvos: Record<string, GenieOutput> = {};
+    store.nodes.forEach((node) => {
+      if (node.type === "genie") {
+        const conv = getGenieConversation(store, node.id);
+        if (conv) genieConvos[node.id] = conv;
+      }
+    });
+
+    return {
+      outputs: store.outputs,
+      genieConversations: genieConvos,
+      urlContexts: urlLoader.urlContexts,
+      userInputs: store.userInputs,
+    };
+  }, [store, urlLoader.urlContexts]);
+
   // Wrapper for buildSystemPrompt that uses current state
   const buildSystemPromptWrapper = useCallback(
-    (nodeIndex: number, additionalPrompt?: string, includeGenies: boolean = true): string => {
+    (nodeIndex: number, additionalPrompt?: string): string => {
       const precedingNodes = store.nodes.slice(0, nodeIndex);
-
-      // Get genie conversations
-      const genieConvos: Record<string, GenieOutput> = {};
-      precedingNodes.forEach((node) => {
-        if (node.type === "genie") {
-          const conv = getGenieConversation(store, node.id);
-          if (conv) genieConvos[node.id] = conv;
-        }
-      });
+      const context = buildPipelineContext();
 
       return buildSystemPrompt(
         store.systemPromptConfig.prompt,
         precedingNodes,
-        genieConvos,
-        urlLoader.urlContexts,
-        store.userInputs,
-        { additionalPrompt, includeGenieConversations: includeGenies }
+        context,
+        { additionalPrompt }
       );
     },
-    [store, urlLoader.urlContexts]
+    [store, buildPipelineContext]
   );
 
   // Main inference handler
@@ -129,24 +137,13 @@ export function PipelineBuilder() {
         userMessage += `\n\nRemember: If you want to send a message to a genie, you MUST call the ${genieToolNamesForUser.join(" or ")} tool. Do not just say you will send a message - actually call the tool.`;
       }
 
-      // Get genie conversations
-      const genieConvos: Record<string, GenieOutput> = {};
-      precedingNodes.forEach((node) => {
-        if (node.type === "genie") {
-          const conv = getGenieConversation(store, node.id);
-          if (conv) genieConvos[node.id] = conv;
-        }
-      });
-
-      // Build system prompt from preceding nodes
+      // Build system prompt from preceding nodes using unified context
+      const pipelineContext = buildPipelineContext();
       let systemPrompt =
         buildSystemPrompt(
           store.systemPromptConfig.prompt,
           precedingNodes,
-          genieConvos,
-          urlLoader.urlContexts,
-          store.userInputs,
-          { includeGenieConversations: true }
+          pipelineContext
         ) || "You are a helpful assistant.";
 
       // Add explicit instruction about using tools if genie tools are available

@@ -4,11 +4,9 @@ export type { InferenceParams, InferenceResult } from "./api";
 export {
   buildSystemPrompt,
   buildSystemPromptFromPrecedingNodes,
-  formatGenieContext,
-  gatherURLContext,
-  gatherTextInputs,
+  createNodeStateAccessor,
 } from "./promptBuilder";
-export type { PromptBuilderOptions } from "./promptBuilder";
+export type { PromptBuilderOptions, PipelineContext } from "./promptBuilder";
 
 export { routeToolCalls } from "./toolRouter";
 export type { OutputData } from "./toolRouter";

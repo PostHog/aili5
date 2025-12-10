@@ -1,19 +1,59 @@
-import type { NodeInterface, InferenceResponse } from "@/lib/nodeInterface";
+import type { NodeInterface, InferenceResponse, NodeRuntimeState } from "@/lib/nodeInterface";
+import type { PipelineNodeConfig, TextInputConfig, URLLoaderConfig, GenieConfig, GenieOutput, URLContextItem, TextOutput } from "@/types/pipeline";
 import { IconDisplayNodeInterface } from "@/components/builder/nodes/IconDisplayNodeEditor";
 import { ColorDisplayNodeInterface } from "@/components/builder/nodes/ColorDisplayNodeEditor";
 import { GenieNodeInterface } from "@/components/builder/nodes/GenieNodeEditor";
 
 /**
+ * Built-in node interfaces for core node types
+ * These provide context() methods for nodes that don't have visual editors
+ */
+
+// Text Input node - provides user input as context
+const TextInputNodeInterface: NodeInterface<TextInputConfig, never> = {
+  meta: () => "",
+  parse: () => undefined,
+  context: (config, _blockId, state) => {
+    if (!state.userInput?.trim()) return null;
+    return `\n\n### ${config.label || "Text Input"}\n${state.userInput.trim()}`;
+  },
+};
+
+// URL Loader node - provides fetched content as context
+const URLLoaderNodeInterface: NodeInterface<URLLoaderConfig, never> = {
+  meta: () => "",
+  parse: () => undefined,
+  context: (config, _blockId, state) => {
+    const ctx = state.urlContext as URLContextItem | undefined;
+    if (!ctx?.content || ctx.error) return null;
+    const label = config.label || ctx.url || "URL Content";
+    return `\n\n### ${label}\nSource: ${ctx.url}\n\n${ctx.content}`;
+  },
+};
+
+// Inference node - provides its output as context
+const InferenceNodeInterface: NodeInterface<unknown, never> = {
+  meta: () => "",
+  parse: () => undefined,
+  context: (_config, _blockId, state) => {
+    const output = state.output as TextOutput | undefined;
+    if (!output?.content?.trim()) return null;
+    return `\n\n### Previous Response\n${output.content.trim()}`;
+  },
+};
+
+/**
  * Registry of node interfaces by block type
- * Each node type implements NodeInterface with meta and parse methods
+ * Each node type implements NodeInterface with meta, parse, and optionally context methods
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const nodeInterfaces: Record<string, NodeInterface<any, any>> = {
+  text_input: TextInputNodeInterface,
+  url_loader: URLLoaderNodeInterface,
+  inference: InferenceNodeInterface,
   icon_display: IconDisplayNodeInterface,
   color_display: ColorDisplayNodeInterface,
   genie: GenieNodeInterface,
-  // Add more node interfaces here as needed:
-  // gauge_display: GaugeDisplayNodeInterface,
 };
 
 /**
@@ -59,4 +99,58 @@ export function getRegisteredBlockTypes(): string[] {
  */
 export function hasNodeInterface(blockType: string): boolean {
   return blockType in nodeInterfaces;
+}
+
+/**
+ * Generate context string for a specific node
+ * This returns what the node contributes to downstream nodes' context
+ */
+export function generateNodeContext(
+  blockType: string,
+  config: unknown,
+  blockId: string,
+  state: NodeRuntimeState
+): string {
+  const nodeInterface = nodeInterfaces[blockType];
+  if (!nodeInterface?.context) {
+    return "";
+  }
+  return nodeInterface.context(config, blockId, state) || "";
+}
+
+/**
+ * State accessor function type - used to get runtime state for a node
+ */
+export type NodeStateAccessor = (nodeId: string) => NodeRuntimeState;
+
+/**
+ * Gather all context from preceding nodes
+ * This is the unified context builder that any node can use
+ * @param precedingNodes - Nodes before the target node
+ * @param getNodeState - Function to get runtime state for each node
+ * @returns Combined context string from all preceding nodes
+ */
+export function gatherPrecedingContext(
+  precedingNodes: PipelineNodeConfig[],
+  getNodeState: NodeStateAccessor
+): string {
+  let context = "";
+
+  for (const node of precedingNodes) {
+    const state = getNodeState(node.id);
+    
+    // Get metadata (tool descriptions, etc.)
+    const metadata = generateBlockMetadata(node.type, node.config, node.id);
+    if (metadata) {
+      context += metadata;
+    }
+
+    // Get context (actual content/output from the node)
+    const nodeContext = generateNodeContext(node.type, node.config, node.id, state);
+    if (nodeContext) {
+      context += nodeContext;
+    }
+  }
+
+  return context;
 }
