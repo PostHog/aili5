@@ -53,6 +53,8 @@ interface PipelineCanvasProps {
   streamingNodeId?: string | null;
   streamingText?: string;
   isStreaming?: boolean;
+  // Survey-specific props
+  onSurveySelect?: (nodeId: string, selectedIds: string[]) => void;
 }
 
 interface SortableNodeProps {
@@ -87,6 +89,10 @@ interface SortableNodeProps {
   // Streaming props
   streamingText?: string;
   isStreaming?: boolean;
+  // Preceding node output (for nodes that read upstream)
+  precedingOutput?: GenieOutput | null;
+  // Survey-specific props
+  onSurveySelect?: (nodeId: string, selectedIds: string[]) => void;
 }
 
 function SortableNode({
@@ -117,6 +123,8 @@ function SortableNode({
   onOpenTutorial,
   streamingText,
   isStreaming,
+  precedingOutput,
+  onSurveySelect,
 }: SortableNodeProps) {
   const {
     attributes,
@@ -233,6 +241,8 @@ function SortableNode({
             geniePendingPrompt={geniePendingPrompt}
             onGenieClearPendingPrompt={onGenieClearPendingPrompt}
             onInspectContext={onInspectContext}
+            precedingOutput={precedingOutput}
+            onSurveySelect={onSurveySelect}
           />
         </div>
       </div>
@@ -303,6 +313,7 @@ export function PipelineCanvas({
   onInspectContext,
   onOpenTutorial,
   onOpenGameLibrary,
+  onSurveySelect,
 }: PipelineCanvasProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: "pipeline-canvas",
@@ -357,36 +368,50 @@ export function PipelineCanvas({
             items={nodes.map((n) => n.id)}
             strategy={verticalListSortingStrategy}
           >
-            {nodes.map((node, index) => (
-              <SortableNode
-                key={node.id}
-                node={node}
-                onRemove={() => onRemoveNode(node.id)}
-                onConfigChange={onConfigChange}
-                userInputValue={userInputs[node.id] || ""}
-                onUserInputChange={onUserInputChange}
-                onRunInference={onRunInference}
-                onLoadURL={onLoadURL}
-                isLoading={loadingNodeId === node.id}
-                isLoadingUrl={loadingUrlNodeIds.has(node.id)}
-                output={node.output || null}
-                urlContext={urlContexts[node.id] || null}
-                isLast={index === nodes.length - 1}
-                isDropTarget={overNodeId === node.id && activeNodeId !== node.id}
-                mounted={mounted}
-                genieConversation={genieConversations?.[node.id]}
-                onGenieSelfInference={onGenieSelfInference}
-                onGenieSaveBackstory={onGenieSaveBackstory}
-                genieHasUpdate={genieBackstoryUpdates?.[node.id] || false}
-                onGenieClearUpdate={onGenieClearUpdate}
-                geniePendingPrompt={geniePendingPrompts?.[node.id]}
-                onGenieClearPendingPrompt={onGenieClearPendingPrompt}
-                isHighlighted={highlightedNodeId === node.id}
-                isInspected={inspectedNodeId === node.id}
-                onInspectContext={onInspectContext}
-                onOpenTutorial={onOpenTutorial}
-              />
-            ))}
+            {nodes.map((node, index) => {
+              // Compute preceding output for this node
+              // For genie nodes, use the conversation; for others, use the output
+              let precedingOutput: GenieOutput | null = null;
+              if (index > 0) {
+                const precedingNode = nodes[index - 1];
+                if (precedingNode.type === "genie") {
+                  precedingOutput = genieConversations?.[precedingNode.id] || null;
+                }
+              }
+              
+              return (
+                <SortableNode
+                  key={node.id}
+                  node={node}
+                  onRemove={() => onRemoveNode(node.id)}
+                  onConfigChange={onConfigChange}
+                  userInputValue={userInputs[node.id] || ""}
+                  onUserInputChange={onUserInputChange}
+                  onRunInference={onRunInference}
+                  onLoadURL={onLoadURL}
+                  isLoading={loadingNodeId === node.id}
+                  isLoadingUrl={loadingUrlNodeIds.has(node.id)}
+                  output={node.output || null}
+                  urlContext={urlContexts[node.id] || null}
+                  isLast={index === nodes.length - 1}
+                  isDropTarget={overNodeId === node.id && activeNodeId !== node.id}
+                  mounted={mounted}
+                  genieConversation={genieConversations?.[node.id]}
+                  onGenieSelfInference={onGenieSelfInference}
+                  onGenieSaveBackstory={onGenieSaveBackstory}
+                  genieHasUpdate={genieBackstoryUpdates?.[node.id] || false}
+                  onGenieClearUpdate={onGenieClearUpdate}
+                  geniePendingPrompt={geniePendingPrompts?.[node.id]}
+                  onGenieClearPendingPrompt={onGenieClearPendingPrompt}
+                  isHighlighted={highlightedNodeId === node.id}
+                  isInspected={inspectedNodeId === node.id}
+                  onInspectContext={onInspectContext}
+                  onOpenTutorial={onOpenTutorial}
+                  precedingOutput={precedingOutput}
+                  onSurveySelect={onSurveySelect}
+                />
+              );
+            })}
           </SortableContext>
         )}
 

@@ -32,18 +32,22 @@ Use this to indicate whether a condition was met, a guess was correct, or a task
 
   /**
    * Parse pass/fail output from inference response
+   * Matches tools like "display_result", "display_guess_result", etc.
    */
   parse: (response: InferenceResponse, _blockId: string): PassFailOutput | undefined => {
-    // Try to find result tool call (with or without custom name)
-    if (response.toolCalls) {
-      const resultToolCall = response.toolCalls.find((tc) =>
-        tc.toolName.startsWith("display_") && tc.toolName.endsWith("_result") ||
-        tc.toolName === "display_result"
-      );
+    if (response.toolCalls && response.toolCalls.length > 0) {
+      // Find the first tool call that matches the pass/fail pattern
+      const resultToolCall = response.toolCalls.find((tc) => {
+        const name = tc.toolName;
+        // Match: display_result, display_X_result, display_anything_result
+        return name === "display_result" || 
+               (name.startsWith("display_") && name.endsWith("_result"));
+      });
+      
       if (resultToolCall && resultToolCall.input) {
         const input = resultToolCall.input;
         return {
-          passed: input.passed as boolean,
+          passed: Boolean(input.passed),
           message: input.message as string | undefined,
           explanation: input.explanation as string | undefined,
         };

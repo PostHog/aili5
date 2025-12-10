@@ -15,6 +15,7 @@ import type {
   GenieConfig,
   ScoreDisplayConfig,
   PassFailDisplayConfig,
+  SurveyConfig,
   URLContextItem,
   TextOutput,
   IconOutput,
@@ -24,6 +25,7 @@ import type {
   GenieOutput,
   ScoreOutput,
   PassFailOutput,
+  SurveyOutput,
 } from "@/types/pipeline";
 import { SystemPromptNodeEditor } from "./SystemPromptNodeEditor";
 import { InferenceNodeEditor } from "./InferenceNodeEditor";
@@ -37,6 +39,7 @@ import { PaintNodeEditor } from "./PaintNodeEditor";
 import { GenieNodeEditor } from "./GenieNodeEditor";
 import { ScoreDisplayNodeEditor } from "./ScoreDisplayNodeEditor";
 import { PassFailDisplayNodeEditor } from "./PassFailDisplayNodeEditor";
+import { SurveyNodeEditor } from "./SurveyNodeEditor";
 
 interface NodeRendererProps {
   node: PipelineNodeConfig;
@@ -58,6 +61,10 @@ interface NodeRendererProps {
   onGenieClearPendingPrompt?: (nodeId: string) => void;
   // Context inspector prop
   onInspectContext?: (nodeId: string) => void;
+  // Preceding node output (for nodes that read upstream)
+  precedingOutput?: GenieOutput | null;
+  // Survey-specific props
+  onSurveySelect?: (nodeId: string, selectedIds: string[]) => void;
 }
 
 export function NodeRenderer({
@@ -78,6 +85,8 @@ export function NodeRenderer({
   geniePendingPrompt,
   onGenieClearPendingPrompt,
   onInspectContext,
+  precedingOutput,
+  onSurveySelect,
 }: NodeRendererProps) {
   switch (node.type) {
     case "system_prompt":
@@ -213,10 +222,21 @@ export function NodeRenderer({
         />
       );
 
+    case "survey":
+      return (
+        <SurveyNodeEditor
+          config={node.config as SurveyConfig}
+          onChange={(config) => onConfigChange(node.id, config)}
+          output={output as SurveyOutput | null}
+          loading={isLoading}
+          precedingOutput={precedingOutput}
+          onSelectOption={(selectedIds) => onSurveySelect?.(node.id, selectedIds)}
+        />
+      );
+
     // Placeholder for other node types
     case "gauge_display":
     case "webhook_trigger":
-    case "survey":
       return (
         <div style={{ padding: "0.75rem", fontSize: "0.875rem", color: "var(--foreground)", opacity: 0.6 }}>
           {node.type.replace("_", " ")} editor coming soon...

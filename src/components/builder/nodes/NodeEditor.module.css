@@ -1233,3 +1233,118 @@
   font-size: 0.6875rem;
   opacity: 0.5;
 }
+
+/* Survey Node Styles */
+.surveyContainer {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.surveyQuestion {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--foreground);
+  padding: 0.75rem;
+  background: color-mix(in srgb, var(--foreground) 5%, transparent);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.surveyOptions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.surveyOption {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid color-mix(in srgb, var(--foreground) 20%, transparent);
+  border-radius: 8px;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.surveyOption:hover {
+  border-color: color-mix(in srgb, var(--foreground) 40%, transparent);
+  background: color-mix(in srgb, var(--foreground) 5%, transparent);
+}
+
+.surveyOptionSelected {
+  border-color: #3b82f6;
+  background: color-mix(in srgb, #3b82f6 15%, transparent);
+}
+
+.surveyOptionSelected:hover {
+  border-color: #3b82f6;
+  background: color-mix(in srgb, #3b82f6 20%, transparent);
+}
+
+.optionId {
+  font-weight: 600;
+  min-width: 1.5rem;
+}
+
+.optionLabel {
+  flex: 1;
+}
+
+.radioIndicator {
+  font-size: 0.75rem;
+  color: color-mix(in srgb, var(--foreground) 50%, transparent);
+}
+
+.surveyOptionSelected .radioIndicator {
+  color: #3b82f6;
+}
+
+.surveyDropdown {
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid color-mix(in srgb, var(--foreground) 20%, transparent);
+  border-radius: 8px;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.surveyDropdown:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.surveySelection {
+  font-size: 0.8125rem;
+  color: #3b82f6;
+  font-weight: 500;
+  text-align: center;
+  padding: 0.5rem;
+  background: color-mix(in srgb, #3b82f6 10%, transparent);
+  border-radius: 6px;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: color-mix(in srgb, var(--foreground) 70%, transparent);
+  cursor: pointer;
+}
+
+.checkboxLabel input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+}

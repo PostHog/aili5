@@ -6,6 +6,15 @@ import type {
 
 // Re-export individual game templates
 export { createPictionaryPipeline } from "./pictionary";
+export { createMoodRingPipeline } from "./moodRing";
+export { createTriviaMasterPipeline } from "./triviaMaster";
+export { createStoryBuilderPipeline } from "./storyBuilder";
+export { createPixelArtStudioPipeline } from "./pixelArtStudio";
+export { createEmojiTranslatorPipeline } from "./emojiTranslator";
+export { createStressMeterPipeline } from "./stressMeter";
+export { createHotOrColdPipeline } from "./hotOrCold";
+export { createVibeCheckPipeline } from "./vibeCheck";
+export { createFortuneCookiePipeline } from "./fortuneCookie";
 
 /**
  * Serializable state that can be loaded into the pipeline store.
@@ -45,6 +54,15 @@ export interface GameTemplate {
 
 // Import game templates
 import { pictionaryTemplate } from "./pictionary";
+import { moodRingTemplate } from "./moodRing";
+import { triviaMasterTemplate } from "./triviaMaster";
+import { storyBuilderTemplate } from "./storyBuilder";
+import { pixelArtStudioTemplate } from "./pixelArtStudio";
+import { emojiTranslatorTemplate } from "./emojiTranslator";
+import { stressMeterTemplate } from "./stressMeter";
+import { hotOrColdTemplate } from "./hotOrCold";
+import { vibeCheckTemplate } from "./vibeCheck";
+import { fortuneCookieTemplate } from "./fortuneCookie";
 
 /**
  * Registry of all available game templates.
@@ -52,10 +70,15 @@ import { pictionaryTemplate } from "./pictionary";
  */
 export const GAME_TEMPLATES: GameTemplate[] = [
   pictionaryTemplate,
-  // Future games:
-  // triviaTemplate,
-  // moodRingTemplate,
-  // storyChainTemplate,
+  moodRingTemplate,
+  triviaMasterTemplate,
+  storyBuilderTemplate,
+  pixelArtStudioTemplate,
+  emojiTranslatorTemplate,
+  stressMeterTemplate,
+  hotOrColdTemplate,
+  vibeCheckTemplate,
+  fortuneCookieTemplate,
 ];
 
 /**
@@ -79,4 +102,3 @@ export function getGameTemplates(tag?: string): GameTemplate[] {
 export function generateNodeId(): string {
   return crypto.randomUUID();
 }
-

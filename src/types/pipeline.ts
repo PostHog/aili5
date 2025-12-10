@@ -128,6 +128,8 @@ export interface SurveyConfig {
   name?: string;
   label?: string;
   style?: "buttons" | "radio" | "dropdown";
+  /** When true, parse options from the preceding node's output (e.g., from a Genie's response) */
+  populateFromPreceding?: boolean;
 }
 
 export interface ScoreDisplayConfig {

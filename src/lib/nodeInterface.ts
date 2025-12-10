@@ -7,6 +7,7 @@ export interface NodeRuntimeState {
   conversation?: unknown;     // For genie nodes - their conversation history
   urlContext?: unknown;       // For URL loader nodes - fetched content
   userInput?: string;         // For text input nodes - user's input
+  precedingOutput?: unknown;  // Output from the immediately preceding node (for nodes that read upstream)
 }
 
 /**

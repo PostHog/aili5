@@ -35,16 +35,16 @@ Use this to rate, evaluate, or score something.`;
    */
   parse: (response: InferenceResponse, _blockId: string): ScoreOutput | undefined => {
     // Try to find score tool call (with or without custom name)
-    if (response.toolCalls) {
+    if (response.toolCalls && response.toolCalls.length > 0) {
       const scoreToolCall = response.toolCalls.find((tc) =>
-        tc.toolName.startsWith("display_") && tc.toolName.endsWith("_score") ||
+        (tc.toolName.startsWith("display_") && tc.toolName.endsWith("_score")) ||
         tc.toolName === "display_score"
       );
       if (scoreToolCall && scoreToolCall.input) {
         const input = scoreToolCall.input;
         return {
-          score: input.score as number,
-          maxScore: input.maxScore as number | undefined,
+          score: Number(input.score),
+          maxScore: input.maxScore != null ? Number(input.maxScore) : undefined,
           label: input.label as string | undefined,
           explanation: input.explanation as string | undefined,
         };
