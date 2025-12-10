@@ -30,7 +30,9 @@ export type NodeType =
   | "pixel_art_display"
   | "webhook_trigger"
   | "survey"
-  | "genie";
+  | "genie"
+  | "score_display"
+  | "pass_fail_display";
 
 // ─────────────────────────────────────────────────────────────────
 // Node Configuration Types
@@ -126,6 +128,28 @@ export interface SurveyConfig {
   name?: string;
   label?: string;
   style?: "buttons" | "radio" | "dropdown";
+  /** When true, parse options from the preceding node's output (e.g., from a Genie's response) */
+  populateFromPreceding?: boolean;
+}
+
+export interface ScoreDisplayConfig {
+  /** Unique name for this output - becomes the tool name (e.g., "creativity" → "display_creativity_score") */
+  name?: string;
+  label?: string;
+  /** Maximum score value (default: 100) */
+  maxScore?: number;
+  /** Show star rating based on percentage */
+  showStars?: boolean;
+}
+
+export interface PassFailDisplayConfig {
+  /** Unique name for this output - becomes the tool name (e.g., "guess" → "display_guess_result") */
+  name?: string;
+  label?: string;
+  /** Custom text for pass state (default: "PASS") */
+  passLabel?: string;
+  /** Custom text for fail state (default: "FAIL") */
+  failLabel?: string;
 }
 
 export interface GenieConfig {
@@ -158,6 +182,8 @@ export interface NodeConfigByType {
   webhook_trigger: WebhookTriggerConfig;
   survey: SurveyConfig;
   genie: GenieConfig;
+  score_display: ScoreDisplayConfig;
+  pass_fail_display: PassFailDisplayConfig;
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -209,7 +235,9 @@ export type OutputType =
   | "gauge"
   | "pixel_art"
   | "webhook"
-  | "survey";
+  | "survey"
+  | "score"
+  | "pass_fail";
 
 export interface TextOutput {
   content: string;
@@ -277,6 +305,19 @@ export interface SurveyOutput {
   selectedIds?: string[];
 }
 
+export interface ScoreOutput {
+  score: number;
+  maxScore?: number;
+  label?: string;
+  explanation?: string;
+}
+
+export interface PassFailOutput {
+  passed: boolean;
+  message?: string;
+  explanation?: string;
+}
+
 // Map output types to their data types
 export interface OutputDataByType {
   text: TextOutput;
@@ -287,6 +328,8 @@ export interface OutputDataByType {
   pixel_art: PixelArtOutput;
   webhook: WebhookOutput;
   survey: SurveyOutput;
+  score: ScoreOutput;
+  pass_fail: PassFailOutput;
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -318,8 +361,13 @@ export interface InferenceResponse {
   toolCalls?: Array<{ toolName: string; toolId: string; input: Record<string, unknown> }>;
 }
 
+export interface GenieMessage {
+  role: "user" | "assistant" | "system";
+  content: string;
+}
+
 export interface GenieOutput {
-  messages: Array<{ role: "user" | "assistant" | "system"; content: string }>;
+  messages: GenieMessage[];
   lastUpdated?: number;
 }
 

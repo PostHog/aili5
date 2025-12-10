@@ -6,6 +6,9 @@ import { EmojiDisplayNodeInterface } from "@/components/builder/nodes/EmojiDispl
 import { PixelArtDisplayNodeInterface } from "@/components/builder/nodes/PixelArtDisplayNodeEditor";
 import { PaintNodeInterface } from "@/components/builder/nodes/PaintNodeEditor";
 import { GenieNodeInterface } from "@/components/builder/nodes/GenieNodeEditor";
+import { ScoreDisplayNodeInterface } from "@/components/builder/nodes/ScoreDisplayNodeEditor";
+import { PassFailDisplayNodeInterface } from "@/components/builder/nodes/PassFailDisplayNodeEditor";
+import { SurveyNodeInterface } from "@/components/builder/nodes/SurveyNodeEditor";
 
 /**
  * Built-in node interfaces for core node types
@@ -60,6 +63,9 @@ const nodeInterfaces: Record<string, NodeInterface<any, any>> = {
   emoji_display: EmojiDisplayNodeInterface,
   pixel_art_display: PixelArtDisplayNodeInterface,
   genie: GenieNodeInterface,
+  score_display: ScoreDisplayNodeInterface,
+  pass_fail_display: PassFailDisplayNodeInterface,
+  survey: SurveyNodeInterface,
 };
 
 /**
@@ -126,8 +132,10 @@ export function generateNodeContext(
 
 /**
  * State accessor function type - used to get runtime state for a node
+ * @param nodeId - The node's ID
+ * @param nodeIndex - Optional index of the node in the pipeline (for accessing preceding node output)
  */
-export type NodeStateAccessor = (nodeId: string) => NodeRuntimeState;
+export type NodeStateAccessor = (nodeId: string, nodeIndex?: number) => NodeRuntimeState;
 
 /**
  * Gather all context from preceding nodes
@@ -142,8 +150,9 @@ export function gatherPrecedingContext(
 ): string {
   let context = "";
 
-  for (const node of precedingNodes) {
-    const state = getNodeState(node.id);
+  for (let i = 0; i < precedingNodes.length; i++) {
+    const node = precedingNodes[i];
+    const state = getNodeState(node.id, i);
     
     // Get metadata (tool descriptions, etc.)
     const metadata = generateBlockMetadata(node.type, node.config, node.id);
@@ -159,4 +168,16 @@ export function gatherPrecedingContext(
   }
 
   return context;
+}
+
+/**
+ * Register a node interface for a block type
+ * Used by node editors to register their interfaces
+ */
+export function registerNodeInterface(
+  blockType: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  nodeInterface: NodeInterface<any, any>
+): void {
+  nodeInterfaces[blockType] = nodeInterface;
 }

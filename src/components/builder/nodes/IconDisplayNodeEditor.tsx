@@ -44,7 +44,7 @@ export const IconDisplayNodeInterface: NodeInterface<IconDisplayConfig, IconOutp
     return `\n\nAvailable output block:
 - "${label}": ${blockId}, tool: ${toolName}
 
-To display an icon, you MUST call the ${toolName} tool with:
+To display an icon, you (CRITICAL MANDATORY TOOL CALL) MUST call the ${toolName} tool with:
 - id: One of [${availableIcons}]
 - label: (optional) A label to show with the icon
 - explanation: (optional) Why you chose this icon

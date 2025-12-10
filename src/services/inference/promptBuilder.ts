@@ -23,16 +23,30 @@ export interface PipelineContext {
 
 /**
  * Create a node state accessor from pipeline context
- * This returns the runtime state for any node
+ * This returns the runtime state for any node, including the preceding node's output
  */
-export function createNodeStateAccessor(context: PipelineContext): (nodeId: string) => NodeRuntimeState {
-  return (nodeId: string): NodeRuntimeState => {
+export function createNodeStateAccessor(
+  context: PipelineContext
+): (nodeId: string, nodeIndex?: number) => NodeRuntimeState {
+  return (nodeId: string, nodeIndex?: number): NodeRuntimeState => {
     const node = context.nodes.find((n) => n.id === nodeId);
+    
+    // Get preceding node's output if nodeIndex is provided
+    let precedingOutput: unknown = undefined;
+    if (nodeIndex !== undefined && nodeIndex > 0) {
+      const precedingNode = context.nodes[nodeIndex - 1];
+      if (precedingNode) {
+        // For genie nodes, use the conversation as the output
+        precedingOutput = context.genieConversations[precedingNode.id] ?? precedingNode.output;
+      }
+    }
+    
     return {
       output: node?.output ?? undefined,
       conversation: context.genieConversations[nodeId] ?? undefined,
       urlContext: context.urlContexts[nodeId] ?? undefined,
       userInput: context.userInputs[nodeId] ?? undefined,
+      precedingOutput,
     };
   };
 }

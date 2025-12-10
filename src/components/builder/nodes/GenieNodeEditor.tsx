@@ -124,6 +124,8 @@ interface GenieNodeEditorProps {
   hasUpdate: boolean;
   onClearUpdate: () => void;
   onInspectContext?: () => void;
+  pendingPrompt?: string;
+  onClearPendingPrompt?: () => void;
 }
 
 export function GenieNodeEditor({
@@ -136,6 +138,8 @@ export function GenieNodeEditor({
   hasUpdate,
   onClearUpdate,
   onInspectContext,
+  pendingPrompt,
+  onClearPendingPrompt,
 }: GenieNodeEditorProps) {
   const [userMessage, setUserMessage] = useState("");
   const [backstoryDirty, setBackstoryDirty] = useState(false);
@@ -143,6 +147,14 @@ export function GenieNodeEditor({
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   const messages = conversation?.messages || [];
+
+  // Auto-trigger inference when there's a pending prompt (e.g., from game load)
+  useEffect(() => {
+    if (pendingPrompt && !loading && config.backstory?.trim()) {
+      onClearPendingPrompt?.();
+      onSelfInference(pendingPrompt);
+    }
+  }, [pendingPrompt, loading, config.backstory, onSelfInference, onClearPendingPrompt]);
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {

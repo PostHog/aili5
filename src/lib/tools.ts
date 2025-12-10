@@ -12,6 +12,8 @@ import type {
   WebhookTriggerConfig,
   SurveyConfig,
   GenieConfig,
+  ScoreDisplayConfig,
+  PassFailDisplayConfig,
 } from "@/types/pipeline";
 import { ICON_IDS } from "@/types/pipeline";
 
@@ -282,6 +284,56 @@ const TOOL_TEMPLATES: Partial<Record<OutputType, ToolTemplate>> = {
       required: ["question", "options"],
     },
   },
+
+  score: {
+    baseToolName: "display_score",
+    description: "Display a score to evaluate or rate something. Use this to show how well something performed.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        score: {
+          type: "number",
+          description: "The score value (e.g., 0-100)",
+        },
+        maxScore: {
+          type: "number",
+          description: "Maximum possible score (default: 100)",
+        },
+        label: {
+          type: "string",
+          description: "What this score represents (e.g., 'Creativity', 'Accuracy')",
+        },
+        explanation: {
+          type: "string",
+          description: "Why you gave this score",
+        },
+      },
+      required: ["score"],
+    },
+  },
+
+  pass_fail: {
+    baseToolName: "display_result",
+    description: "Display a pass/fail result based on whether a condition was met. Use this to show success or failure.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        passed: {
+          type: "boolean",
+          description: "Whether the condition passed (true) or failed (false)",
+        },
+        message: {
+          type: "string",
+          description: "Short feedback message (e.g., 'Correct!', 'Not quite...')",
+        },
+        explanation: {
+          type: "string",
+          description: "Detailed explanation of the result",
+        },
+      },
+      required: ["passed"],
+    },
+  },
 };
 
 // ─────────────────────────────────────────────────────────────────
@@ -296,6 +348,8 @@ const NODE_TYPE_TO_OUTPUT_TYPE: Partial<Record<NodeType, OutputType>> = {
   pixel_art_display: "pixel_art",
   webhook_trigger: "webhook",
   survey: "survey",
+  score_display: "score",
+  pass_fail_display: "pass_fail",
 };
 
 /**
@@ -309,7 +363,9 @@ function getCustomName(node: PipelineNodeConfig): string | undefined {
     | GaugeDisplayConfig
     | PixelArtDisplayConfig
     | WebhookTriggerConfig
-    | SurveyConfig;
+    | SurveyConfig
+    | ScoreDisplayConfig
+    | PassFailDisplayConfig;
   return config?.name;
 }
 
