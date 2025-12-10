@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -59,6 +60,7 @@ interface SortableNodeProps {
   urlContext: URLContextItem | null;
   isLast: boolean;
   isDropTarget: boolean;
+  mounted: boolean;
   // Genie-specific props
   genieConversation?: GenieOutput | null;
   onGenieSelfInference?: (nodeId: string, message: string) => void;
@@ -84,6 +86,7 @@ function SortableNode({
   urlContext,
   isLast,
   isDropTarget,
+  mounted,
   genieConversation,
   onGenieSelfInference,
   onGenieSaveBackstory,
@@ -194,7 +197,7 @@ function SortableNode({
           />
         </div>
       </div>
-      {!isLast && (
+      {mounted && !isLast && (
         <div className={styles.connector}>
           <PipeIcon size={36} />
         </div>
@@ -239,22 +242,35 @@ export function PipelineCanvas({
     id: "pipeline-canvas",
   });
 
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const isEmpty = nodes.length === 0;
 
   return (
     <div className={styles.canvas}>
       <div className={styles.header}>
         <h2 className={styles.title}>Pipeline</h2>
-        <span className={styles.nodeCount}>
-          {nodes.length} {nodes.length === 1 ? "node" : "nodes"}
-        </span>
+        {mounted && (
+          <span className={styles.nodeCount}>
+            {nodes.length} {nodes.length === 1 ? "node" : "nodes"}
+          </span>
+        )}
       </div>
 
       <div
         ref={setNodeRef}
         className={`${styles.nodeList} ${isEmpty ? styles.empty : ""} ${isOver ? styles.over : ""}`}
       >
-        {isEmpty ? (
+        {!mounted ? (
+          // Render empty state during SSR to match initial client render
+          <div className={styles.emptyState}>
+            <p>Drag modules here to build your pipeline</p>
+          </div>
+        ) : isEmpty ? (
           <div className={styles.emptyState}>
             <p>Drag modules here to build your pipeline</p>
           </div>
@@ -279,6 +295,7 @@ export function PipelineCanvas({
                 urlContext={urlContexts[node.id] || null}
                 isLast={index === nodes.length - 1}
                 isDropTarget={overNodeId === node.id && activeNodeId !== node.id}
+                mounted={mounted}
                 genieConversation={genieConversations?.[node.id]}
                 onGenieSelfInference={onGenieSelfInference}
                 onGenieSaveBackstory={onGenieSaveBackstory}
