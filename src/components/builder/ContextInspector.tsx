@@ -303,43 +303,53 @@ export function ContextInspector({
             No context available for this node.
           </div>
         ) : (
-          sections.map((section) => {
-            const isCollapsed = collapsedSections.has(section.id);
-            const IconComponent = section.icon;
+          (() => {
+            const firstDimmedIndex = sections.findIndex((s) => s.isDimmed);
+            return sections.map((section, index) => {
+              const isCollapsed = collapsedSections.has(section.id);
+              const IconComponent = section.icon;
+              const showDivider = firstDimmedIndex !== -1 && index === firstDimmedIndex;
 
-            return (
-              <div
-                key={section.id}
-                className={`${styles.section} ${section.isDimmed ? styles.dimmed : ""}`}
-                data-section-id={section.id}
-                data-node-id={section.sourceNodeId}
-                onMouseEnter={() => onHoverSection(section.sourceNodeId)}
-                onMouseLeave={() => onHoverSection(null)}
-              >
-                <button
-                  className={styles.sectionHeader}
-                  onClick={() => toggleSection(section.id)}
-                >
-                  <div className={styles.sectionTitleRow}>
-                    {isCollapsed ? (
-                      <ChevronRight size={14} />
-                    ) : (
-                      <ChevronDown size={14} />
+              return (
+                <div key={section.id}>
+                  {showDivider && (
+                    <div className={styles.outOfContextDivider}>
+                      <span>Out of context (drag above this node to include)</span>
+                    </div>
+                  )}
+                  <div
+                    className={`${styles.section} ${section.isDimmed ? styles.dimmed : ""}`}
+                    data-section-id={section.id}
+                    data-node-id={section.sourceNodeId}
+                    onMouseEnter={() => onHoverSection(section.sourceNodeId)}
+                    onMouseLeave={() => onHoverSection(null)}
+                  >
+                    <button
+                      className={styles.sectionHeader}
+                      onClick={() => toggleSection(section.id)}
+                    >
+                      <div className={styles.sectionTitleRow}>
+                        {isCollapsed ? (
+                          <ChevronRight size={14} />
+                        ) : (
+                          <ChevronDown size={14} />
+                        )}
+                        <IconComponent size={14} className={styles.sectionIcon} />
+                        <span className={styles.sectionTitle}>{section.title}</span>
+                      </div>
+                      <span className={styles.sectionType}>{section.type}</span>
+                    </button>
+
+                    {!isCollapsed && (
+                      <div className={styles.sectionContent}>
+                        <pre className={styles.contentPre}>{section.content}</pre>
+                      </div>
                     )}
-                    <IconComponent size={14} className={styles.sectionIcon} />
-                    <span className={styles.sectionTitle}>{section.title}</span>
                   </div>
-                  <span className={styles.sectionType}>{section.type}</span>
-                </button>
-
-                {!isCollapsed && (
-                  <div className={styles.sectionContent}>
-                    <pre className={styles.contentPre}>{section.content}</pre>
-                  </div>
-                )}
-              </div>
-            );
-          })
+                </div>
+              );
+            });
+          })()
         )}
       </div>
 
