@@ -1,0 +1,442 @@
+.gameContainer {
+  font-family: "Georgia", serif;
+  background: #1a1a2e;
+  color: #d4c5a9;
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+.gameContainer::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 15, 30, 0.3);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.gameContainer > * {
+  position: relative;
+  z-index: 1;
+}
+
+.header {
+  text-align: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 15px;
+  margin: 20px;
+  border: 2px solid #4a3f35;
+}
+
+.header h1 {
+  font-size: 2.5em;
+  color: #f4e4c1;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+  margin-bottom: 5px;
+}
+
+.subtitle {
+  color: #8a7a5a;
+  font-style: italic;
+}
+
+.mainContent {
+  display: grid;
+  grid-template-columns: 350px 1fr;
+  gap: 20px;
+  padding: 20px;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.panel {
+  background: rgba(42, 35, 28, 0.8);
+  border-radius: 12px;
+  padding: 20px;
+  border: 2px solid #4a3f35;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+}
+
+.panel h2 {
+  color: #f4e4c1;
+  margin-bottom: 15px;
+  font-size: 1.3em;
+  border-bottom: 2px solid #4a3f35;
+  padding-bottom: 10px;
+}
+
+.characterPortrait {
+  text-align: center;
+  padding: 15px;
+}
+
+.characterImage {
+  font-size: 8em;
+  margin-bottom: 10px;
+}
+
+.characterName {
+  margin-top: 10px;
+  font-size: 1.4em;
+  color: #f4e4c1;
+  font-weight: bold;
+}
+
+.stageSelector {
+  display: grid;
+  gap: 10px;
+}
+
+.stageCard {
+  background: rgba(0, 0, 0, 0.4);
+  padding: 12px;
+  border-radius: 8px;
+  border-left: 4px solid #5a4a3a;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.stageCard:hover {
+  background: rgba(0, 0, 0, 0.6);
+  border-left-color: #8a7a5a;
+  transform: translateX(5px);
+}
+
+.stageCard.completed {
+  border-left-color: #5a9a5a;
+  opacity: 0.7;
+}
+
+.stageCard.active {
+  border-left-color: #4a9aff;
+  background: rgba(74, 154, 255, 0.15);
+}
+
+.stageCard.locked {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.stageIcon {
+  font-size: 2em;
+  min-width: 40px;
+  text-align: center;
+}
+
+.stageInfo {
+  flex: 1;
+}
+
+.stageTitle {
+  font-weight: bold;
+  color: #f4e4c1;
+  font-size: 1.05em;
+}
+
+.stageDesc {
+  font-size: 0.85em;
+  color: #8a7a5a;
+}
+
+.badge {
+  font-size: 1.5em;
+}
+
+.badge.earned {
+  filter: none;
+}
+
+.badge.locked {
+  filter: grayscale(1) opacity(0.3);
+}
+
+.contentArea {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.pipelineCanvas {
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 12px;
+  min-height: 400px;
+  position: relative;
+  overflow: hidden;
+  border: 2px solid #4a3f35;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pipelineCanvas canvas {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.workspaceContainer {
+  background: rgba(42, 35, 28, 0.9);
+  border-radius: 12px;
+  padding: 25px;
+  border: 2px solid #4a3f35;
+  min-height: 300px;
+}
+
+.workspace {
+  color: #d4c5a9;
+}
+
+.workspace h2 {
+  color: #f4e4c1;
+  margin-bottom: 15px;
+  font-size: 1.5em;
+}
+
+.tutorialText {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  line-height: 1.6;
+}
+
+.tutorialText p {
+  margin-bottom: 10px;
+}
+
+.tutorialText p:last-child {
+  margin-bottom: 0;
+}
+
+.helpBtn {
+  background: rgba(74, 154, 255, 0.2);
+  border: 1px solid #4a9aff;
+  color: #4a9aff;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-bottom: 15px;
+  transition: all 0.2s;
+}
+
+.helpBtn:hover {
+  background: rgba(74, 154, 255, 0.3);
+}
+
+.helpBox {
+  background: rgba(0, 0, 0, 0.5);
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border-left: 4px solid #4a9aff;
+  display: none;
+}
+
+.helpBox.visible {
+  display: block;
+}
+
+.helpBox p {
+  margin-bottom: 8px;
+}
+
+.helpBox p:last-child {
+  margin-bottom: 0;
+}
+
+.outputGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.outputOption {
+  background: rgba(0, 0, 0, 0.4);
+  padding: 20px;
+  border-radius: 8px;
+  border: 2px solid #5a4a3a;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.3s;
+}
+
+.outputOption:hover {
+  background: rgba(0, 0, 0, 0.6);
+  border-color: #8a7a5a;
+  transform: translateY(-2px);
+}
+
+.outputIcon {
+  font-size: 3em;
+  margin-bottom: 10px;
+}
+
+.outputName {
+  font-weight: bold;
+  color: #f4e4c1;
+  font-size: 1.1em;
+  margin-bottom: 5px;
+}
+
+.outputDesc {
+  font-size: 0.75em;
+  color: #8a7a5a;
+}
+
+.buttonCenter {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.btnPrimary {
+  background: #4a9aff;
+  color: #fff;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 1em;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btnPrimary:hover:not(:disabled) {
+  background: #5aa5ff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(74, 154, 255, 0.4);
+}
+
+.btnPrimary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.completedMessage {
+  background: rgba(90, 154, 90, 0.2);
+  border: 1px solid #5a9a5a;
+  color: #5a9a5a;
+  padding: 12px;
+  border-radius: 8px;
+  text-align: center;
+  margin-top: 20px;
+  font-weight: bold;
+}
+
+.nodeEditor {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 15px;
+  border-radius: 8px;
+  margin-top: 20px;
+}
+
+.field {
+  margin-bottom: 15px;
+}
+
+.field:last-child {
+  margin-bottom: 0;
+}
+
+.label {
+  display: block;
+  color: #f4e4c1;
+  margin-bottom: 5px;
+  font-size: 0.9em;
+  font-weight: 500;
+}
+
+.input,
+.textarea {
+  width: 100%;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid #5a4a3a;
+  border-radius: 6px;
+  color: #d4c5a9;
+  font-family: inherit;
+  font-size: 0.9em;
+}
+
+.input:focus,
+.textarea:focus {
+  outline: none;
+  border-color: #4a9aff;
+  box-shadow: 0 0 0 2px rgba(74, 154, 255, 0.2);
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.helpText {
+  color: #8a7a5a;
+  font-size: 0.85em;
+  margin-top: 10px;
+  font-style: italic;
+}
+
+.completionOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.completionModal {
+  background: rgba(42, 35, 28, 0.95);
+  border: 2px solid #4a9aff;
+  border-radius: 15px;
+  padding: 40px;
+  text-align: center;
+  max-width: 500px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
+}
+
+.completionModal h2 {
+  color: #f4e4c1;
+  font-size: 2em;
+  margin-bottom: 20px;
+}
+
+.completionModal p {
+  color: #d4c5a9;
+  margin-bottom: 15px;
+  line-height: 1.6;
+}
+
+@media (max-width: 1024px) {
+  .mainContent {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    order: 2;
+  }
+
+  .contentArea {
+    order: 1;
+  }
+
+  .outputGrid {
+    grid-template-columns: 1fr;
+  }
+}
