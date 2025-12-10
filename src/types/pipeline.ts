@@ -367,7 +367,7 @@ export interface GenieMessage {
 }
 
 export interface GenieOutput {
-  messages: Array<{ role: "user" | "assistant" | "system"; content: string }>;
+  messages: GenieMessage[];
   lastUpdated?: number;
 }
 
